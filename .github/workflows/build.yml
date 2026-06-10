@@ -1,0 +1,52 @@
+name: Build and Package
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt 6.5 LTS
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.5.*'
+          arch: 'win64_msvc2019_64'
+          cache: true
+
+      - name: Configure CMake
+        run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Package portable zip
+        run: |
+          mkdir dist
+          copy build\Release\Pomodoro.exe dist\
+          windeployqt --release --no-translations dist\Pomodoro.exe
+          copy qt.conf dist\
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pomodoro-Windows-Portable
+          path: dist/
+
+      - name: Create release zip
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: Compress-Archive -Path dist\* -DestinationPath Pomodoro.zip
+
+      - name: Upload release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Pomodoro.zip
