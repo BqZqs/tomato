@@ -1,12 +1,12 @@
 #pragma once
 
 #include <QMainWindow>
+#include "pomodoro.h"
 
 class QLabel;
 class QPushButton;
 class QRadioButton;
 class QGroupBox;
-class PomodoroTimer;
 
 class MainWindow : public QMainWindow
 {
