@@ -2,3 +2,6 @@ build/
 dist/
 *.user
 CMakeLists.txt.user
+
+# OpenCode session history (privacy)
+.omo/
