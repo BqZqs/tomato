@@ -11,6 +11,11 @@ add_executable(Pomodoro
     src/main.cpp
     src/pomodoro.cpp
     src/mainwindow.cpp
+    src/taskdata.cpp
+    src/taskwidget.cpp
+    src/notedata.cpp
+    src/notewidget.cpp
+    src/lang.cpp
 )
 
 target_include_directories(Pomodoro PRIVATE src)
