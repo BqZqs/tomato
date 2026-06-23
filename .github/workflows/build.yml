@@ -10,13 +10,10 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup MSVC compiler
-        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Install Qt 6.5 LTS
         uses: jurplel/install-qt-action@v4
@@ -26,19 +23,17 @@ jobs:
           cache: true
 
       - name: Configure CMake
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+        run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
 
       - name: Build
         run: cmake --build build --config Release
 
       - name: Package portable zip
-        shell: pwsh
         run: |
-          mkdir dist -Force
-          $exe = Get-ChildItem -Path build -Recurse -Name Pomodoro.exe | Select-Object -First 1
-          Copy-Item "build\$exe" dist\
+          mkdir dist
+          copy build\Release\Pomodoro.exe dist\
           windeployqt --release --no-translations dist\Pomodoro.exe
-          Copy-Item qt.conf dist\
+          copy qt.conf dist\
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
