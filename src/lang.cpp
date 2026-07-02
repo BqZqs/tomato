@@ -56,6 +56,10 @@ void LocaleManager::loadSettings()
     QString lang = doc.object().value(QStringLiteral("language")).toString();
     if (m_langs.contains(lang))
         m_currentLang = lang;
+
+    m_taskFontSize = doc.object().value(QStringLiteral("taskFontSize")).toInt(16);
+    if (m_taskFontSize < 8) m_taskFontSize = 8;
+    if (m_taskFontSize > 48) m_taskFontSize = 48;
 }
 
 void LocaleManager::saveSettings()
@@ -64,6 +68,7 @@ void LocaleManager::saveSettings()
 
     QJsonObject obj;
     obj[QStringLiteral("language")] = m_currentLang;
+    obj[QStringLiteral("taskFontSize")] = m_taskFontSize;
 
     QSaveFile f(m_settingsPath);
     if (!f.open(QIODevice::WriteOnly))
@@ -86,6 +91,20 @@ void LocaleManager::setLanguage(const QString &lang)
     m_currentLang = lang;
     saveSettings();
     emit languageChanged();
+}
+
+int LocaleManager::taskFontSize() const
+{
+    return m_taskFontSize;
+}
+
+void LocaleManager::setTaskFontSize(int size)
+{
+    if (size < 8 || size > 48 || m_taskFontSize == size)
+        return;
+    m_taskFontSize = size;
+    saveSettings();
+    emit taskFontSizeChanged(size);
 }
 
 QStringList LocaleManager::languages() const
@@ -181,4 +200,5 @@ void LocaleManager::initTranslations()
     add(QStringLiteral("Delete note for %1?"), QStringLiteral("\u5220\u9664 %1 \u7684\u7B14\u8BB0\uFF1F"), QStringLiteral("Delete note for %1?")); // 删除...的笔记？
     add(QStringLiteral("Start writing..."), QStringLiteral("\u5F00\u59CB\u5199\u4F5C..."), QStringLiteral("Start writing...")); // 开始写作...
     add(QStringLiteral("Language"),       QStringLiteral("\u8BED\u8A00"),              QStringLiteral("Language"));        // 语言
+    add(QStringLiteral("Font Size:"),     QStringLiteral("\u5B57\u4F53\u5927\u5C0F:"),  QStringLiteral("Font Size:"));       // 字体大小
 }

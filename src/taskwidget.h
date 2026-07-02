@@ -10,6 +10,7 @@ class QPushButton;
 class QLabel;
 class QDateEdit;
 class QStackedWidget;
+class QSpinBox;
 class QVBoxLayout;
 class QHBoxLayout;
 
@@ -37,6 +38,9 @@ private slots:
     // Translation refresh
     void refreshTexts();
 
+    // Font size
+    void setTaskFontSize(int size);
+
     // Create actions
     void onCreateEmpty();
     void onInheritAll();
@@ -53,6 +57,7 @@ private:
     void populateTaskList();
     void saveCurrentList();
     void updateStatus();
+    void applyFontSize();
     bool isAtWindowStart() const;
     bool isAtWindowEnd() const;
     QPair<QDate, QDate> navWindow() const;
@@ -84,4 +89,10 @@ private:
     QPushButton *m_btnCreateEmpty = nullptr;
     QPushButton *m_btnInheritAll = nullptr;
     QPushButton *m_btnInheritIncomplete = nullptr;
+
+    // Font size control
+    int m_taskFontSize = 16;
+    QLabel *m_fontLabel = nullptr;
+    QSpinBox *m_fontSpinBox = nullptr;
+    QWidget *m_fontControlRow = nullptr;
 };

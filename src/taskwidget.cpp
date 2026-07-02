@@ -10,6 +10,7 @@
 #include <QListWidget>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSpinBox>
 #include <QStackedWidget>
 #include <QUuid>
 #include <QVBoxLayout>
@@ -19,7 +20,6 @@
 // ---------------------------------------------------------------------------
 static const char *kBtnStyle =
     "QPushButton {"
-    "  font-size:13px;"
     "  color:#2c3e50;"
     "  background:#ecf0f1;"
     "  border:1px solid #bdc3c7;"
@@ -44,7 +44,6 @@ static const char *kDateEditStyle =
 
 static const char *kListStyle =
     "QListWidget {"
-    "  font-size:13px;"
     "  color:#2c3e50;"
     "  background:#ecf0f1;"
     "  border:1px solid #bdc3c7;"
@@ -83,10 +82,16 @@ TaskWidget::TaskWidget(TaskData *data, QWidget *parent)
     : QWidget(parent), m_data(data), m_currentDate(QDate::currentDate())
 {
     buildUi();
+
+    m_taskFontSize = LocaleManager::instance()->taskFontSize();
+    applyFontSize();
+
     refreshAll();
 
     connect(LocaleManager::instance(), &LocaleManager::languageChanged,
             this, &TaskWidget::refreshTexts);
+    connect(LocaleManager::instance(), &LocaleManager::taskFontSizeChanged,
+            this, &TaskWidget::setTaskFontSize);
 }
 
 // ---------------------------------------------------------------------------
@@ -112,6 +117,28 @@ void TaskWidget::buildUi()
     m_stack->addWidget(buildTaskListView());   // index 0
     m_stack->addWidget(buildCreateView());      // index 1
     mainLayout->addWidget(m_stack, /*stretch=*/1);
+
+    // --- Font size control ---
+    {
+        auto *fontRow = new QHBoxLayout;
+        fontRow->setSpacing(8);
+        m_fontLabel = new QLabel(loc("Font Size:"), this);
+        m_fontLabel->setStyleSheet(QStringLiteral("font-size:12px; color:#7f8c8d;"));
+        m_fontSpinBox = new QSpinBox(this);
+        m_fontSpinBox->setRange(8, 48);
+        m_fontSpinBox->setValue(m_taskFontSize);
+        m_fontSpinBox->setSuffix(QStringLiteral(" px"));
+        m_fontSpinBox->setStyleSheet(QStringLiteral("font-size:12px; padding:2px 4px;"));
+        m_fontSpinBox->setToolTip(loc("Adjust task list font size"));
+        fontRow->addWidget(m_fontLabel);
+        fontRow->addWidget(m_fontSpinBox);
+        fontRow->addStretch();
+        mainLayout->addLayout(fontRow);
+
+        connect(m_fontSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int size) {
+            LocaleManager::instance()->setTaskFontSize(size);
+        });
+    }
 
     mainLayout->addStretch();
 }
@@ -316,6 +343,10 @@ void TaskWidget::refreshTexts()
     m_btnToggle->setText(loc("\u2713 Toggle"));
     m_btnCleanup->setText(loc("\U0001F9F9 Cleanup"));
 
+    // Font size control
+    m_fontLabel->setText(loc("Font Size:"));
+    m_fontSpinBox->setToolTip(loc("Adjust task list font size"));
+
     // Create view buttons
     m_btnCreateEmpty->setText(loc("Create Empty List"));
     m_btnInheritAll->setText(loc("Inherit All from..."));
@@ -405,6 +436,41 @@ void TaskWidget::updateStatus()
 
         m_statusLabel->setText(
             loc("%1 tasks, %2 done").arg(total).arg(done));
+}
+
+// ---------------------------------------------------------------------------
+// Font size
+// ---------------------------------------------------------------------------
+void TaskWidget::applyFontSize()
+{
+    const QString btnStyle = QStringLiteral("font-size:%1px;").arg(m_taskFontSize)
+                             + QString::fromLatin1(kBtnStyle);
+    const QString listStyle = QStringLiteral("font-size:%1px;").arg(m_taskFontSize)
+                              + QString::fromLatin1(kListStyle);
+
+    m_taskList->setStyleSheet(listStyle);
+
+    m_btnAdd->setStyleSheet(btnStyle);
+    m_btnEdit->setStyleSheet(btnStyle);
+    m_btnDelete->setStyleSheet(btnStyle);
+    m_btnToggle->setStyleSheet(btnStyle);
+    m_btnCleanup->setStyleSheet(btnStyle);
+    m_btnCreateEmpty->setStyleSheet(btnStyle);
+    m_btnInheritAll->setStyleSheet(btnStyle);
+    m_btnInheritIncomplete->setStyleSheet(btnStyle);
+}
+
+void TaskWidget::setTaskFontSize(int size)
+{
+    if (size == m_taskFontSize)
+        return;
+    m_taskFontSize = size;
+    applyFontSize();
+    if (m_fontSpinBox) {
+        m_fontSpinBox->blockSignals(true);
+        m_fontSpinBox->setValue(size);
+        m_fontSpinBox->blockSignals(false);
+    }
 }
 
 // ---------------------------------------------------------------------------

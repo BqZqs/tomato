@@ -10,6 +10,7 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
 add_executable(Pomodoro
     src/main.cpp
     src/pomodoro.cpp
+    src/pomodoro_widget.cpp
     src/mainwindow.cpp
     src/taskdata.cpp
     src/taskwidget.cpp

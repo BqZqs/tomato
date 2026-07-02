@@ -1,19 +1,16 @@
 #pragma once
 
 #include <QMainWindow>
-#include "pomodoro.h"
-#include "taskdata.h"
-#include "notedata.h"
 
+class NoteData;
+class TaskData;
 class QComboBox;
-class QHBoxLayout;
+class QKeyEvent;
 class QLabel;
-class QPushButton;
-class QRadioButton;
-class QGroupBox;
-class QStackedWidget;
-class TaskWidget;
+class QSplitter;
 class NoteWidget;
+class TaskWidget;
+class PomodoroWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -22,54 +19,33 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
 
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+
 private slots:
-    void onTick(int remaining);
-    void onFinished();
-    void onStateChanged(PomodoroTimer::State s);
-    void onModeChanged(PomodoroTimer::Mode m);
-    void onSessionCompleted(int n);
-    void onStartPause();
-    void onReset();
-    void onModeRadio();
-    void onNavClicked(int index);
     void onLanguageChanged(int index);
     void refreshTexts();
 
 private:
     void setupUi();
-    void setupTimerPage(QWidget *page);
-    void setupLanguageCombo(QHBoxLayout *navBar);
-    void refreshDisplay();
-    void refreshButtons();
-    void updateNavButtons(int active);
-    static QString fmt(int secs);
+    void toggleFullscreen();
     QString dataDirPath() const;
 
-    PomodoroTimer *m_timer;
     TaskData *m_taskData;
     NoteData *m_noteData;
 
-    // Navigation
-    QStackedWidget *m_stack;
-    QPushButton *m_btnTimer;
-    QPushButton *m_btnTasks;
-    QPushButton *m_btnNotes;
+    // Top bar
+    QLabel *m_titleLabel;
     QComboBox *m_langCombo;
 
-    // Timer page widgets
-    QLabel *m_display;
-    QLabel *m_status;
-    QLabel *m_sessions;
-    QRadioButton *m_rbWork;
-    QRadioButton *m_rbShort;
-    QRadioButton *m_rbLong;
-    QPushButton *m_btnStart;
-    QPushButton *m_btnReset;
-    QGroupBox *m_modeGroup;
+    // Layout splitters
+    QSplitter *m_mainSplitter;
+    QSplitter *m_leftSplitter;
 
-    // Task page
+    // Feature widgets
+    PomodoroWidget *m_pomodoroWidget;
     TaskWidget *m_taskWidget;
-
-    // Note page
     NoteWidget *m_noteWidget;
+
+    bool m_fullscreen = false;
 };
