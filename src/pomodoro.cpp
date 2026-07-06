@@ -10,33 +10,16 @@ PomodoroTimer::PomodoroTimer(QObject *parent)
 
 void PomodoroTimer::applyDuration()
 {
-    switch (m_mode) {
-    case Mode::Work:       m_total = m_workSec; break;
-    case Mode::ShortBreak:  m_total = m_shortSec; break;
-    case Mode::LongBreak:   m_total = m_longSec; break;
-    }
+    m_total = m_durationSec;
     m_remaining = m_total;
 }
 
-void PomodoroTimer::setWorkDuration(int minutes)
+void PomodoroTimer::setDuration(int minutes)
 {
     if (minutes < 1 || minutes > 120) return;
-    m_workSec = minutes * 60;
-    if (m_mode == Mode::Work) applyDuration();
-}
-
-void PomodoroTimer::setShortDuration(int minutes)
-{
-    if (minutes < 1 || minutes > 30) return;
-    m_shortSec = minutes * 60;
-    if (m_mode == Mode::ShortBreak) applyDuration();
-}
-
-void PomodoroTimer::setLongDuration(int minutes)
-{
-    if (minutes < 1 || minutes > 60) return;
-    m_longSec = minutes * 60;
-    if (m_mode == Mode::LongBreak) applyDuration();
+    m_durationSec = minutes * 60;
+    if (m_state == State::Stopped)
+        applyDuration();
 }
 
 void PomodoroTimer::start()
@@ -65,18 +48,6 @@ void PomodoroTimer::reset()
     emit stateChanged(m_state);
 }
 
-void PomodoroTimer::setMode(Mode mode)
-{
-    if (m_mode == mode) return;
-    m_mode = mode;
-    m_timer->stop();
-    m_state = State::Stopped;
-    applyDuration();
-    emit tick(m_remaining);
-    emit stateChanged(m_state);
-    emit modeChanged(m_mode);
-}
-
 void PomodoroTimer::onTimeout()
 {
     --m_remaining;
@@ -87,10 +58,8 @@ void PomodoroTimer::onTimeout()
         m_state = State::Stopped;
         emit stateChanged(m_state);
 
-        if (m_mode == Mode::Work) {
-            ++m_completed;
-            emit sessionCompleted(m_completed);
-        }
+        ++m_completed;
+        emit sessionCompleted(m_completed);
 
         emit finished();
     }

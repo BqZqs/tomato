@@ -4,28 +4,28 @@
 
 class QLabel;
 class QPushButton;
-class QRadioButton;
-class QGroupBox;
 class QSpinBox;
 
 class PomodoroWidget : public QWidget {
     Q_OBJECT
 public:
     explicit PomodoroWidget(QWidget *parent = nullptr);
-    int completedSessions() const;  // delegate to m_timer
+    int completedSessions() const;
+
 public slots:
-    void refreshTexts(); // re-translate all UI strings
+    void refreshTexts();
+    void startTimedSession(const QString &taskId, int minutes);
+
+signals:
+    void timedSessionFinished(const QString &taskId);
 
 private slots:
     void onTick(int remaining);
     void onFinished();
     void onStateChanged(PomodoroTimer::State s);
-    void onModeChanged(PomodoroTimer::Mode m);
     void onSessionCompleted(int n);
     void onStartPause();
     void onReset();
-    void onModeRadio();
-    void onDurationChanged();
 
 private:
     void setupUi();
@@ -38,20 +38,10 @@ private:
     QLabel *m_display;
     QLabel *m_status;
     QLabel *m_sessions;
-    QRadioButton *m_rbWork;
-    QRadioButton *m_rbShort;
-    QRadioButton *m_rbLong;
+    QLabel *m_minUnit;
+    QSpinBox *m_minutesSpinBox;
     QPushButton *m_btnStart;
     QPushButton *m_btnReset;
-    QGroupBox *m_modeGroup;
-    QGroupBox *m_durGroup;
-    QSpinBox *m_workSpinBox;
-    QSpinBox *m_shortSpinBox;
-    QSpinBox *m_longSpinBox;
-    QLabel *m_workLabel;
-    QLabel *m_shortLabel;
-    QLabel *m_longLabel;
-    QLabel *m_workUnit;
-    QLabel *m_shortUnit;
-    QLabel *m_longUnit;
+
+    QString m_activeTaskId;
 };

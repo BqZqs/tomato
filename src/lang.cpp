@@ -61,15 +61,9 @@ void LocaleManager::loadSettings()
     if (m_taskFontSize < 8) m_taskFontSize = 8;
     if (m_taskFontSize > 48) m_taskFontSize = 48;
 
-    m_workDur = doc.object().value(QStringLiteral("workDuration")).toInt(25);
-    if (m_workDur < 1) m_workDur = 1;
-    if (m_workDur > 120) m_workDur = 120;
-    m_shortDur = doc.object().value(QStringLiteral("shortDuration")).toInt(5);
-    if (m_shortDur < 1) m_shortDur = 1;
-    if (m_shortDur > 30) m_shortDur = 30;
-    m_longDur = doc.object().value(QStringLiteral("longDuration")).toInt(15);
-    if (m_longDur < 1) m_longDur = 1;
-    if (m_longDur > 60) m_longDur = 60;
+    m_defaultDuration = doc.object().value(QStringLiteral("defaultDuration")).toInt(25);
+    if (m_defaultDuration < 1) m_defaultDuration = 1;
+    if (m_defaultDuration > 120) m_defaultDuration = 120;
 }
 
 void LocaleManager::saveSettings()
@@ -79,9 +73,7 @@ void LocaleManager::saveSettings()
     QJsonObject obj;
     obj[QStringLiteral("language")] = m_currentLang;
     obj[QStringLiteral("taskFontSize")] = m_taskFontSize;
-    obj[QStringLiteral("workDuration")] = m_workDur;
-    obj[QStringLiteral("shortDuration")] = m_shortDur;
-    obj[QStringLiteral("longDuration")] = m_longDur;
+    obj[QStringLiteral("defaultDuration")] = m_defaultDuration;
 
     QSaveFile f(m_settingsPath);
     if (!f.open(QIODevice::WriteOnly))
@@ -120,43 +112,16 @@ void LocaleManager::setTaskFontSize(int size)
     emit taskFontSizeChanged(size);
 }
 
-int LocaleManager::workDuration() const
+int LocaleManager::defaultDuration() const
 {
-    return m_workDur;
+    return m_defaultDuration;
 }
 
-void LocaleManager::setWorkDuration(int min)
+void LocaleManager::setDefaultDuration(int min)
 {
-    if (min < 1 || min > 120 || m_workDur == min) return;
-    m_workDur = min;
+    if (min < 1 || min > 120 || m_defaultDuration == min) return;
+    m_defaultDuration = min;
     saveSettings();
-    emit durationsChanged();
-}
-
-int LocaleManager::shortDuration() const
-{
-    return m_shortDur;
-}
-
-void LocaleManager::setShortDuration(int min)
-{
-    if (min < 1 || min > 30 || m_shortDur == min) return;
-    m_shortDur = min;
-    saveSettings();
-    emit durationsChanged();
-}
-
-int LocaleManager::longDuration() const
-{
-    return m_longDur;
-}
-
-void LocaleManager::setLongDuration(int min)
-{
-    if (min < 1 || min > 60 || m_longDur == min) return;
-    m_longDur = min;
-    saveSettings();
-    emit durationsChanged();
 }
 
 QStringList LocaleManager::languages() const
@@ -192,18 +157,7 @@ void LocaleManager::initTranslations()
 
     // ── mainwindow.cpp ────────────────────────────────────────────────
     add(QStringLiteral("Pomodoro"),       QStringLiteral("\u756A\u8304\u949F"),       QStringLiteral("Pomodoro"));        // 番茄钟
-    add(QStringLiteral("Timer"),          QStringLiteral("\u8BA1\u65F6\u5668"),        QStringLiteral("Timer"));           // 计时器
-    add(QStringLiteral("Tasks"),          QStringLiteral("\u4EFB\u52A1\u6E05\u5355"),  QStringLiteral("Tasks"));           // 任务清单
-    add(QStringLiteral("Notes"),          QStringLiteral("\u7B14\u8BB0"),              QStringLiteral("Notes"));           // 笔记
     add(QStringLiteral("Ready"),          QStringLiteral("\u51C6\u5907\u5C31\u7EEA"),  QStringLiteral("Ready"));           // 准备就绪
-    add(QStringLiteral("Mode"),           QStringLiteral("\u6A21\u5F0F"),              QStringLiteral("Mode"));            // 模式
-    add(QStringLiteral("Work (%1 min)"),  QStringLiteral("\u5DE5\u4F5C (%1 \u5206\u949F)"), QStringLiteral("Work (%1 min)"));   // 工作
-    add(QStringLiteral("Short Break (%1 min)"), QStringLiteral("\u77ED\u4F11\u606F (%1 \u5206\u949F)"), QStringLiteral("Short Break (%1 min)")); // 短休息
-    add(QStringLiteral("Long Break (%1 min)"), QStringLiteral("\u957F\u4F11\u606F (%1 \u5206\u949F)"), QStringLiteral("Long Break (%1 min)")); // 长休息
-    add(QStringLiteral("Duration"),       QStringLiteral("\u65F6\u957F"),              QStringLiteral("Duration"));        // 时长
-    add(QStringLiteral("Work:"),          QStringLiteral("\u5DE5\u4F5C:"),             QStringLiteral("Work:"));           // 工作
-    add(QStringLiteral("Short Break:"),   QStringLiteral("\u77ED\u4F11\u606F:"),       QStringLiteral("Short Break:"));    // 短休息
-    add(QStringLiteral("Long Break:"),    QStringLiteral("\u957F\u4F11\u606F:"),       QStringLiteral("Long Break:"));     // 长休息
     add(QStringLiteral("min"),            QStringLiteral("\u5206\u949F"),              QStringLiteral("min"));             // 分钟
     add(QStringLiteral("Start"),          QStringLiteral("\u5F00\u59CB"),              QStringLiteral("Start"));           // 开始
     add(QStringLiteral("Pause"),          QStringLiteral("\u6682\u505C"),              QStringLiteral("Pause"));           // 暂停
@@ -216,23 +170,27 @@ void LocaleManager::initTranslations()
 
     // ── taskwidget.cpp ────────────────────────────────────────────────
     add(QStringLiteral("Today"),          QStringLiteral("\u4ECA\u5929"),              QStringLiteral("Today"));           // 今天
-    add(QStringLiteral("+ Add"),          QStringLiteral("+ \u6DFB\u52A0"),            QStringLiteral("+ Add"));           // 添加
-    add(QStringLiteral("\u270E Edit"),    QStringLiteral("\u270E \u7F16\u8F91"),       QStringLiteral("\u270E Edit"));     // ✎ 编辑
-    add(QStringLiteral("\U0001F5D1 Delete"), QStringLiteral("\U0001F5D1 \u5220\u9664"), QStringLiteral("\U0001F5D1 Delete")); // 🗑 删除
-    add(QStringLiteral("\u2713 Toggle"),  QStringLiteral("\u2713 \u5207\u6362"),       QStringLiteral("\u2713 Toggle"));   // ✓ 切换
-    add(QStringLiteral("\U0001F9F9 Cleanup"), QStringLiteral("\U0001F9F9 \u6E05\u7406"), QStringLiteral("\U0001F9F9 Cleanup")); // 🧹 清理
     add(QStringLiteral("No task list for this date."), QStringLiteral("\u8BE5\u65E5\u671F\u6CA1\u6709\u4EFB\u52A1\u6E05\u5355\u3002"), QStringLiteral("No task list for this date.")); // 该日期没有任务清单。
     add(QStringLiteral("Create Empty List"), QStringLiteral("\u521B\u5EFA\u7A7A\u6E05\u5355"), QStringLiteral("Create Empty List")); // 创建空清单
     add(QStringLiteral("Inherit All from..."), QStringLiteral("\u4ECE...\u7EE7\u627F\u5168\u90E8"), QStringLiteral("Inherit All from...")); // 从...继承全部
     add(QStringLiteral("Inherit Incomplete from..."), QStringLiteral("\u4ECE...\u7EE7\u627F\u672A\u5B8C\u6210\u9879"), QStringLiteral("Inherit Incomplete from...")); // 从...继承未完成项
     add(QStringLiteral("%1 tasks, %2 done"), QStringLiteral("%1 \u9879\u4EFB\u52A1, %2 \u9879\u5DF2\u5B8C\u6210"), QStringLiteral("%1 tasks, %2 done")); // 项任务, 项已完成
     add(QStringLiteral("Add Task"),       QStringLiteral("\u6DFB\u52A0\u4EFB\u52A1"),  QStringLiteral("Add Task"));        // 添加任务
+    add(QStringLiteral("Add Timed Task"), QStringLiteral("\u6DFB\u52A0\u8BA1\u65F6\u4EFB\u52A1"), QStringLiteral("Add Timed Task")); // 添加计时任务
+    add(QStringLiteral("Timed Task"),     QStringLiteral("\u8BA1\u65F6\u4EFB\u52A1"),  QStringLiteral("Timed Task"));      // 计时任务
+    add(QStringLiteral("Duration (minutes):"), QStringLiteral("\u65F6\u957F (\u5206\u949F):"), QStringLiteral("Duration (minutes):")); // 时长 (分钟)
+    add(QStringLiteral("Edit Duration"), QStringLiteral("\u7F16\u8F91\u65F6\u957F"), QStringLiteral("Edit Duration")); // 编辑时长
+    add(QStringLiteral("Click to change duration"), QStringLiteral("\u70B9\u51FB\u4FEE\u6539\u65F6\u957F"), QStringLiteral("Click to change duration")); // 点击修改时长
+    add(QStringLiteral("Start timer for this task"), QStringLiteral("\u4E3A\u6B64\u4EFB\u52A1\u542F\u52A8\u8BA1\u65F6\u5668"), QStringLiteral("Start timer for this task")); // 为此任务启动计时器
     add(QStringLiteral("Edit Task"),      QStringLiteral("\u7F16\u8F91\u4EFB\u52A1"),  QStringLiteral("Edit Task"));       // 编辑任务
     add(QStringLiteral("Task Text:"),     QStringLiteral("\u4EFB\u52A1\u5185\u5BB9:"), QStringLiteral("Task Text:"));      // 任务内容
     add(QStringLiteral("Select date to inherit from:"), QStringLiteral("\u9009\u62E9\u8981\u7EE7\u627F\u7684\u65E5\u671F:"), QStringLiteral("Select date to inherit from:")); // 选择要继承的日期
     add(QStringLiteral("No other dates available to inherit from."), QStringLiteral("\u6CA1\u6709\u5176\u4ED6\u53EF\u7EE7\u627F\u7684\u65E5\u671F\u3002"), QStringLiteral("No other dates available to inherit from.")); // 没有其他可继承的日期。
     add(QStringLiteral("Cleanup Complete"), QStringLiteral("\u6E05\u7406\u5B8C\u6210"), QStringLiteral("Cleanup Complete")); // 清理完成
     add(QStringLiteral("Deleted %1 file(s) outside the 15-day window."), QStringLiteral("\u5DF2\u5220\u9664 %1 \u4E2A\u8D85\u51FA 15 \u5929\u7A97\u53E3\u7684\u6587\u4EF6\u3002"), QStringLiteral("Deleted %1 file(s) outside the 15-day window.")); // 已删除...文件
+    add(QStringLiteral("Previous day"),   QStringLiteral("\u524D\u4E00\u5929"),        QStringLiteral("Previous day"));
+    add(QStringLiteral("Next day"),       QStringLiteral("\u540E\u4E00\u5929"),        QStringLiteral("Next day"));
+    add(QStringLiteral("Go to today"),    QStringLiteral("\u56DE\u5230\u4ECA\u5929"),  QStringLiteral("Go to today"));
 
     // ── notewidget.cpp ────────────────────────────────────────────────
     add(QStringLiteral("Notebook:"),      QStringLiteral("\u7B14\u8BB0\u672C\uFF1A"),  QStringLiteral("Notebook:"));       // 笔记本：
@@ -258,4 +216,8 @@ void LocaleManager::initTranslations()
     add(QStringLiteral("Start writing..."), QStringLiteral("\u5F00\u59CB\u5199\u4F5C..."), QStringLiteral("Start writing...")); // 开始写作...
     add(QStringLiteral("Language"),       QStringLiteral("\u8BED\u8A00"),              QStringLiteral("Language"));        // 语言
     add(QStringLiteral("Font Size:"),     QStringLiteral("\u5B57\u4F53\u5927\u5C0F:"),  QStringLiteral("Font Size:"));       // 字体大小
+    add(QStringLiteral("Adjust task list font size"), QStringLiteral("\u8C03\u6574\u4EFB\u52A1\u5217\u8868\u5B57\u4F53\u5927\u5C0F"), QStringLiteral("Adjust task list font size"));
+    add(QStringLiteral("Cleanup"),        QStringLiteral("\u6E05\u7406"),              QStringLiteral("Cleanup"));
+    add(QStringLiteral("Inherit All"),    QStringLiteral("\u7EE7\u627F\u5168\u90E8"),  QStringLiteral("Inherit All"));
+    add(QStringLiteral("Inherit Incomplete"), QStringLiteral("\u7EE7\u627F\u672A\u5B8C\u6210"), QStringLiteral("Inherit Incomplete"));
 }

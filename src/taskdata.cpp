@@ -65,6 +65,7 @@ QList<TaskItem> TaskData::loadTasks(QDate date) const
         item.text      = obj.value(QStringLiteral("text")).toString();
         item.completed = obj.value(QStringLiteral("completed")).toBool();
         item.order     = obj.value(QStringLiteral("order")).toInt(0);
+        item.durationMinutes = obj.value(QStringLiteral("duration")).toInt(0);
         tasks.append(item);
     }
 
@@ -87,6 +88,7 @@ bool TaskData::saveTasks(QDate date, const QList<TaskItem> &tasks) const
         obj[QStringLiteral("text")]      = item.text;
         obj[QStringLiteral("completed")] = item.completed;
         obj[QStringLiteral("order")]     = item.order;
+        obj[QStringLiteral("duration")]  = item.durationMinutes;
         arr.append(obj);
     }
     root[QStringLiteral("tasks")] = arr;

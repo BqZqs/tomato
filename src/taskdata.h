@@ -10,6 +10,7 @@ struct TaskItem {
     QString text;
     bool completed = false;
     int order = 0;
+    int durationMinutes = 0;
 };
 
 class TaskData {

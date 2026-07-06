@@ -22,6 +22,12 @@ class TaskWidget : public QWidget {
 public:
     explicit TaskWidget(TaskData *data, QWidget *parent = nullptr);
 
+public slots:
+    void onTimedSessionFinished(const QString &taskId);
+
+signals:
+    void startTimerForTask(const QString &taskId, int minutes);
+
 private slots:
     // Date navigation
     void onPrevDay();
@@ -31,11 +37,13 @@ private slots:
 
     // Task list actions
     void onAddTask();
+    void onAddTimedTask();
     void onCleanup();
     void onRowChecked(const QString &id, bool checked);
     void onRowEditFinished(const QString &id, const QString &newText);
     void onRowEditCancelled(const QString &id);
     void onRowDelete(const QString &id);
+    void onRowPlay(const QString &id, int minutes);
 
     // Translation refresh
     void refreshTexts();

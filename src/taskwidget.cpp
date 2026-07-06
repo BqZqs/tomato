@@ -11,6 +11,7 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMessageBox>
+#include <QMouseEvent>
 #include <QPushButton>
 #include <QSpinBox>
 #include <QStackedWidget>
@@ -83,8 +84,9 @@ static const char *kNavBtnStyle =
 class TaskRow : public QWidget {
     Q_OBJECT
 public:
-    TaskRow(const QString &id, const QString &text, bool completed, QWidget *parent)
-        : QWidget(parent), m_id(id)
+    TaskRow(const QString &id, const QString &text, bool completed,
+            int durationMinutes, QWidget *parent)
+        : QWidget(parent), m_id(id), m_durationMinutes(durationMinutes)
     {
         auto *lay = new QHBoxLayout(this);
         lay->setContentsMargins(4, 2, 4, 2);
@@ -96,6 +98,26 @@ public:
             emit checkStateChanged(m_id, checked);
         });
         lay->addWidget(m_checkBox);
+
+        // Play button for timed tasks
+        m_playBtn = new QPushButton(QStringLiteral("\u25B6"), this); // ▶
+        m_playBtn->setFixedSize(26, 26);
+        m_playBtn->setFlat(true);
+        m_playBtn->setToolTip(loc("Start timer for this task"));
+        m_playBtn->setVisible(durationMinutes > 0);
+        connect(m_playBtn, &QPushButton::clicked, this, [this]() {
+            emit playRequested(m_id, m_durationMinutes);
+        });
+        lay->addWidget(m_playBtn);
+
+        m_durationLabel = new QLabel(this);
+        m_durationLabel->setVisible(durationMinutes > 0);
+        m_durationLabel->setCursor(Qt::PointingHandCursor);
+        m_durationLabel->setToolTip(loc("Click to change duration"));
+        updateDurationLabel();
+        lay->addWidget(m_durationLabel);
+
+        m_durationLabel->installEventFilter(this);
 
         // Stacked widget: label (view) / line edit (edit)
         m_stack = new QStackedWidget(this);
@@ -130,7 +152,9 @@ public:
     QString id() const { return m_id; }
     QString text() const { return m_label->text(); }
     bool isChecked() const { return m_checkBox->isChecked(); }
+    int durationMinutes() const { return m_durationMinutes; }
     void setText(const QString &t) { m_label->setText(t); }
+    void setChecked(bool c) { m_checkBox->setChecked(c); }
 
     void startEditing()
     {
@@ -143,12 +167,15 @@ public:
     void setTaskFontSize(int px)
     {
         m_label->setStyleSheet(QStringLiteral("font-size:%1px;").arg(px));
+        m_durationLabel->setStyleSheet(
+            QStringLiteral("font-size:%1px; color:#7f8c8d; padding:0 2px;").arg(px - 1));
     }
 
     void setButtonStyle(const QString &style)
     {
         m_editBtn->setStyleSheet(style);
         m_deleteBtn->setStyleSheet(style);
+        m_playBtn->setStyleSheet(style);
     }
 
 signals:
@@ -156,6 +183,8 @@ signals:
     void editFinished(const QString &id, const QString &newText);
     void editCancelled(const QString &id);
     void deleteRequested(const QString &id);
+    void playRequested(const QString &id, int minutes);
+    void durationChanged(const QString &id, int newMinutes);
 
 protected:
     void keyPressEvent(QKeyEvent *event) override
@@ -165,6 +194,23 @@ protected:
             return;
         }
         QWidget::keyPressEvent(event);
+    }
+
+    bool eventFilter(QObject *obj, QEvent *event) override
+    {
+        if (obj == m_durationLabel && event->type() == QEvent::MouseButtonPress) {
+            bool ok = false;
+            int newMin = QInputDialog::getInt(
+                this, loc("Edit Duration"), loc("Duration (minutes):"),
+                m_durationMinutes, 1, 120, 1, &ok);
+            if (ok && newMin != m_durationMinutes) {
+                m_durationMinutes = newMin;
+                updateDurationLabel();
+                emit durationChanged(m_id, m_durationMinutes);
+            }
+            return true;
+        }
+        return QWidget::eventFilter(obj, event);
     }
 
 private:
@@ -186,8 +232,17 @@ private:
         emit editCancelled(m_id);
     }
 
+    void updateDurationLabel()
+    {
+        m_durationLabel->setText(
+            QStringLiteral("\u23F1 %1m").arg(m_durationMinutes));
+    }
+
     QString m_id;
+    int m_durationMinutes = 0;
     QCheckBox *m_checkBox;
+    QPushButton *m_playBtn;
+    QLabel *m_durationLabel;
     QStackedWidget *m_stack;
     QLabel *m_label;
     QLineEdit *m_editor;
@@ -425,6 +480,15 @@ void TaskWidget::refreshTexts()
     m_btnInheritAll->setText(loc("Inherit All from..."));
     m_btnInheritIncomplete->setText(loc("Inherit Incomplete from..."));
 
+    // Refresh tooltips on all task rows
+    for (int i = 0; i < m_taskList->count() - 2; ++i) {
+        auto *row = qobject_cast<TaskRow *>(m_taskList->itemWidget(m_taskList->item(i)));
+        if (row) {
+            // The play button tooltip needs to be refreshed
+            row->setText(row->text());  // trigger any needed updates
+        }
+    }
+
     // Refresh status label and list
     refreshAll();
 }
@@ -456,29 +520,54 @@ void TaskWidget::populateTaskList()
     m_taskList->clear();
 
     const auto tasks = m_data->loadTasks(m_currentDate);
-    for (const auto &t : tasks) {
+
+    // Sort: timed tasks first (durationMinutes > 0), then by order
+    QList<TaskItem> sorted = tasks;
+    std::stable_sort(sorted.begin(), sorted.end(), [](const TaskItem &a, const TaskItem &b) {
+        if (a.durationMinutes > 0 && b.durationMinutes == 0) return true;
+        if (a.durationMinutes == 0 && b.durationMinutes > 0) return false;
+        return a.order < b.order;
+    });
+
+    for (const auto &t : sorted) {
         auto *item = new QListWidgetItem(m_taskList);
-        auto *row = new TaskRow(t.id, t.text, t.completed, m_taskList);
+        auto *row = new TaskRow(t.id, t.text, t.completed, t.durationMinutes, m_taskList);
 
         connect(row, &TaskRow::checkStateChanged, this, &TaskWidget::onRowChecked);
         connect(row, &TaskRow::editFinished, this, &TaskWidget::onRowEditFinished);
         connect(row, &TaskRow::editCancelled, this, &TaskWidget::onRowEditCancelled);
         connect(row, &TaskRow::deleteRequested, this, &TaskWidget::onRowDelete);
+        connect(row, &TaskRow::playRequested, this, &TaskWidget::onRowPlay);
+        connect(row, &TaskRow::durationChanged, this, [this](const QString &, int) {
+            saveCurrentList();
+        });
 
         m_taskList->setItemWidget(item, row);
         item->setSizeHint(row->sizeHint());
     }
 
+    // Split add buttons: normal + timed
     {
         auto *addItem = new QListWidgetItem(m_taskList);
-        auto *addBtn = new QPushButton(
-            QStringLiteral("+ ") + loc("Add Task"), m_taskList);
-        addBtn->setStyleSheet(kBtnStyle);
-        addBtn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        connect(addBtn, &QPushButton::clicked, this, &TaskWidget::onAddTask);
+        auto *addWidget = new QWidget(m_taskList);
+        auto *addLay = new QHBoxLayout(addWidget);
+        addLay->setContentsMargins(4, 2, 4, 2);
+        addLay->setSpacing(4);
 
-        m_taskList->setItemWidget(addItem, addBtn);
-        addItem->setSizeHint(addBtn->sizeHint());
+        auto *addNormalBtn = new QPushButton(
+            QStringLiteral("+ ") + loc("Add Task"), addWidget);
+        addNormalBtn->setStyleSheet(kBtnStyle);
+        connect(addNormalBtn, &QPushButton::clicked, this, &TaskWidget::onAddTask);
+        addLay->addWidget(addNormalBtn, 1);
+
+        auto *addTimedBtn = new QPushButton(QStringLiteral("\u23F1 +"), addWidget); // ⏱+
+        addTimedBtn->setStyleSheet(kBtnStyle);
+        addTimedBtn->setToolTip(loc("Add Timed Task"));
+        connect(addTimedBtn, &QPushButton::clicked, this, &TaskWidget::onAddTimedTask);
+        addLay->addWidget(addTimedBtn, 1);
+
+        m_taskList->setItemWidget(addItem, addWidget);
+        addItem->setSizeHint(addWidget->sizeHint());
     }
 
     {
@@ -522,6 +611,7 @@ void TaskWidget::saveCurrentList()
         t.text      = row->text();
         t.completed = row->isChecked();
         t.order     = i;
+        t.durationMinutes = row->durationMinutes();
         tasks.append(t);
     }
 
@@ -573,12 +663,14 @@ void TaskWidget::applyFontSize()
         }
     }
 
-    // Style the "Add" row button (second-to-last item)
+    // Style the "Add" row widget (second-to-last item) – both buttons inside
     if (m_taskList->count() >= 2) {
-        auto *addBtn = qobject_cast<QPushButton *>(
-            m_taskList->itemWidget(m_taskList->item(m_taskList->count() - 2)));
-        if (addBtn)
-            addBtn->setStyleSheet(btnStyle);
+        auto *addWidget = m_taskList->itemWidget(m_taskList->item(m_taskList->count() - 2));
+        if (addWidget) {
+            auto buttons = addWidget->findChildren<QPushButton *>();
+            for (auto *btn : buttons)
+                btn->setStyleSheet(btnStyle);
+        }
     }
 
     // Cleanup row button (last item) – find the button inside its widget
@@ -655,12 +747,13 @@ void TaskWidget::onAddTask()
     if (insertPos < 0) insertPos = 0;
 
     auto *item = new QListWidgetItem;
-    auto *row = new TaskRow(newId, QString(), false, m_taskList);
+    auto *row = new TaskRow(newId, QString(), false, 0, m_taskList);
 
     connect(row, &TaskRow::checkStateChanged, this, &TaskWidget::onRowChecked);
     connect(row, &TaskRow::editFinished, this, &TaskWidget::onRowEditFinished);
     connect(row, &TaskRow::editCancelled, this, &TaskWidget::onRowEditCancelled);
     connect(row, &TaskRow::deleteRequested, this, &TaskWidget::onRowDelete);
+    connect(row, &TaskRow::playRequested, this, &TaskWidget::onRowPlay);
 
     m_taskList->insertItem(insertPos, item);
     m_taskList->setItemWidget(item, row);
@@ -668,6 +761,47 @@ void TaskWidget::onAddTask()
 
     // Immediately start inline editing
     row->startEditing();
+}
+
+void TaskWidget::onAddTimedTask()
+{
+    bool ok = false;
+    int minutes = QInputDialog::getInt(this, loc("Add Timed Task"),
+        loc("Duration (minutes):"), 25, 1, 120, 1, &ok);
+    if (!ok) return;
+
+    QString newId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+
+    int insertPos = m_taskList->count() - 2;
+    if (insertPos < 0) insertPos = 0;
+
+    auto *item = new QListWidgetItem;
+    auto *row = new TaskRow(newId, QString(), false, minutes, m_taskList);
+
+    connect(row, &TaskRow::checkStateChanged, this, &TaskWidget::onRowChecked);
+    connect(row, &TaskRow::editFinished, this, &TaskWidget::onRowEditFinished);
+    connect(row, &TaskRow::editCancelled, this, &TaskWidget::onRowEditCancelled);
+    connect(row, &TaskRow::deleteRequested, this, &TaskWidget::onRowDelete);
+    connect(row, &TaskRow::playRequested, this, &TaskWidget::onRowPlay);
+
+    m_taskList->insertItem(insertPos, item);
+    m_taskList->setItemWidget(item, row);
+    item->setSizeHint(row->sizeHint());
+
+    row->startEditing();
+}
+
+void TaskWidget::onRowPlay(const QString &id, int minutes)
+{
+    emit startTimerForTask(id, minutes);
+}
+
+void TaskWidget::onTimedSessionFinished(const QString &taskId)
+{
+    auto *row = findRowById(taskId);
+    if (!row) return;
+    row->setChecked(true);
+    saveCurrentList();
 }
 
 void TaskWidget::onRowChecked(const QString &id, bool checked)

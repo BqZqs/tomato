@@ -100,9 +100,15 @@ void MainWindow::setupUi()
     m_taskWidget = new TaskWidget(m_taskData);
     m_leftSplitter->addWidget(m_taskWidget);
 
-    m_leftSplitter->setSizes({240, 480});
+    // Signal bridge: PomodoroWidget ↔ TaskWidget
+    connect(m_pomodoroWidget, &PomodoroWidget::timedSessionFinished,
+            m_taskWidget, &TaskWidget::onTimedSessionFinished);
+    connect(m_taskWidget, &TaskWidget::startTimerForTask,
+            m_pomodoroWidget, &PomodoroWidget::startTimedSession);
+
+    m_leftSplitter->setSizes({360, 360});
     m_leftSplitter->setStretchFactor(0, 1);
-    m_leftSplitter->setStretchFactor(1, 2);
+    m_leftSplitter->setStretchFactor(1, 1);
 
     m_noteWidget = new NoteWidget(m_noteData);
 
@@ -111,10 +117,10 @@ void MainWindow::setupUi()
     m_mainSplitter->addWidget(m_leftSplitter);
     m_mainSplitter->addWidget(m_noteWidget);
 
-    // Initial ratio: left 40%, right 60% of 1280px
-    m_mainSplitter->setSizes({512, 768});
-    m_mainSplitter->setStretchFactor(0, 2);
-    m_mainSplitter->setStretchFactor(1, 3);
+    // Initial ratio: left 50%, right 50%
+    m_mainSplitter->setSizes({640, 640});
+    m_mainSplitter->setStretchFactor(0, 1);
+    m_mainSplitter->setStretchFactor(1, 1);
 
     mainLayout->addWidget(m_mainSplitter, 1);
 }

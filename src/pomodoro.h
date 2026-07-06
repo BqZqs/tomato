@@ -9,34 +9,26 @@ class PomodoroTimer : public QObject
 
 public:
     enum class State { Stopped, Running, Paused };
-    enum class Mode { Work, ShortBreak, LongBreak };
 
     explicit PomodoroTimer(QObject *parent = nullptr);
 
     int remainingSeconds() const { return m_remaining; }
     int totalSeconds() const { return m_total; }
     State state() const { return m_state; }
-    Mode mode() const { return m_mode; }
     int completedSessions() const { return m_completed; }
 
-    int workMinutes() const { return m_workSec / 60; }
-    int shortMinutes() const { return m_shortSec / 60; }
-    int longMinutes() const { return m_longSec / 60; }
-    void setWorkDuration(int minutes);
-    void setShortDuration(int minutes);
-    void setLongDuration(int minutes);
+    int durationMinutes() const { return m_durationSec / 60; }
+    void setDuration(int minutes);
 
 public slots:
     void start();
     void pause();
     void reset();
-    void setMode(Mode mode);
 
 signals:
     void tick(int remaining);
     void finished();
     void stateChanged(State state);
-    void modeChanged(Mode mode);
     void sessionCompleted(int total);
 
 private slots:
@@ -49,10 +41,7 @@ private:
     int m_remaining = 0;
     int m_total = 0;
     State m_state = State::Stopped;
-    Mode m_mode = Mode::Work;
     int m_completed = 0;
 
-    int m_workSec = 25 * 60;
-    int m_shortSec = 5 * 60;
-    int m_longSec = 15 * 60;
+    int m_durationSec = 25 * 60;
 };
