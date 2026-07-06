@@ -19,6 +19,13 @@ public:
     Mode mode() const { return m_mode; }
     int completedSessions() const { return m_completed; }
 
+    int workMinutes() const { return m_workSec / 60; }
+    int shortMinutes() const { return m_shortSec / 60; }
+    int longMinutes() const { return m_longSec / 60; }
+    void setWorkDuration(int minutes);
+    void setShortDuration(int minutes);
+    void setLongDuration(int minutes);
+
 public slots:
     void start();
     void pause();
@@ -45,7 +52,7 @@ private:
     Mode m_mode = Mode::Work;
     int m_completed = 0;
 
-    static constexpr int WORK_SEC = 25 * 60;
-    static constexpr int SHORT_SEC = 5 * 60;
-    static constexpr int LONG_SEC = 15 * 60;
+    int m_workSec = 25 * 60;
+    int m_shortSec = 5 * 60;
+    int m_longSec = 15 * 60;
 };

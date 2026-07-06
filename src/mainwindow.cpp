@@ -100,8 +100,9 @@ void MainWindow::setupUi()
     m_taskWidget = new TaskWidget(m_taskData);
     m_leftSplitter->addWidget(m_taskWidget);
 
+    m_leftSplitter->setSizes({240, 480});
     m_leftSplitter->setStretchFactor(0, 1);
-    m_leftSplitter->setStretchFactor(1, 1);
+    m_leftSplitter->setStretchFactor(1, 2);
 
     m_noteWidget = new NoteWidget(m_noteData);
 

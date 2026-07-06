@@ -6,6 +6,7 @@ class QLabel;
 class QPushButton;
 class QRadioButton;
 class QGroupBox;
+class QSpinBox;
 
 class PomodoroWidget : public QWidget {
     Q_OBJECT
@@ -24,6 +25,7 @@ private slots:
     void onStartPause();
     void onReset();
     void onModeRadio();
+    void onDurationChanged();
 
 private:
     void setupUi();
@@ -42,4 +44,14 @@ private:
     QPushButton *m_btnStart;
     QPushButton *m_btnReset;
     QGroupBox *m_modeGroup;
+    QGroupBox *m_durGroup;
+    QSpinBox *m_workSpinBox;
+    QSpinBox *m_shortSpinBox;
+    QSpinBox *m_longSpinBox;
+    QLabel *m_workLabel;
+    QLabel *m_shortLabel;
+    QLabel *m_longLabel;
+    QLabel *m_workUnit;
+    QLabel *m_shortUnit;
+    QLabel *m_longUnit;
 };

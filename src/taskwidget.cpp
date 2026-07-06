@@ -2,9 +2,11 @@
 #include "taskdata.h"
 #include "lang.h"
 
+#include <QCheckBox>
 #include <QDateEdit>
 #include <QHBoxLayout>
 #include <QInputDialog>
+#include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
@@ -74,6 +76,124 @@ static const char *kNavBtnStyle =
     "QPushButton:hover   { background:#d5dbdb; }"
     "QPushButton:pressed { background:#bdc3c7; }"
     "QPushButton:disabled { color:#95a5a6; background:#ecf0f1; }";
+
+// ---------------------------------------------------------------------------
+// TaskRow – per-task inline widget row with inline editing
+// ---------------------------------------------------------------------------
+class TaskRow : public QWidget {
+    Q_OBJECT
+public:
+    TaskRow(const QString &id, const QString &text, bool completed, QWidget *parent)
+        : QWidget(parent), m_id(id)
+    {
+        auto *lay = new QHBoxLayout(this);
+        lay->setContentsMargins(4, 2, 4, 2);
+        lay->setSpacing(4);
+
+        m_checkBox = new QCheckBox(this);
+        m_checkBox->setChecked(completed);
+        connect(m_checkBox, &QCheckBox::toggled, this, [this](bool checked) {
+            emit checkStateChanged(m_id, checked);
+        });
+        lay->addWidget(m_checkBox);
+
+        // Stacked widget: label (view) / line edit (edit)
+        m_stack = new QStackedWidget(this);
+        m_label = new QLabel(text, this);
+        m_label->setWordWrap(true);
+        m_editor = new QLineEdit(this);
+        m_editor->setPlaceholderText(loc("Task Text:"));
+        m_stack->addWidget(m_label);   // index 0 = view
+        m_stack->addWidget(m_editor);  // index 1 = edit
+        m_stack->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        lay->addWidget(m_stack, /*stretch=*/1);
+
+        connect(m_editor, &QLineEdit::returnPressed, this, &TaskRow::commitEdit);
+
+        m_editBtn = new QPushButton(QStringLiteral("\u270E"), this); // ✎
+        m_editBtn->setFixedSize(26, 26);
+        m_editBtn->setFlat(true);
+        m_editBtn->setToolTip(loc("Edit Task"));
+        connect(m_editBtn, &QPushButton::clicked, this, &TaskRow::startEditing);
+        lay->addWidget(m_editBtn);
+
+        m_deleteBtn = new QPushButton(QStringLiteral("\U0001F5D1"), this); // 🗑
+        m_deleteBtn->setFixedSize(26, 26);
+        m_deleteBtn->setFlat(true);
+        m_deleteBtn->setToolTip(loc("Delete"));
+        connect(m_deleteBtn, &QPushButton::clicked, this, [this]() {
+            emit deleteRequested(m_id);
+        });
+        lay->addWidget(m_deleteBtn);
+    }
+
+    QString id() const { return m_id; }
+    QString text() const { return m_label->text(); }
+    bool isChecked() const { return m_checkBox->isChecked(); }
+    void setText(const QString &t) { m_label->setText(t); }
+
+    void startEditing()
+    {
+        m_editor->setText(m_label->text());
+        m_stack->setCurrentIndex(1);
+        m_editor->setFocus();
+        m_editor->selectAll();
+    }
+
+    void setTaskFontSize(int px)
+    {
+        m_label->setStyleSheet(QStringLiteral("font-size:%1px;").arg(px));
+    }
+
+    void setButtonStyle(const QString &style)
+    {
+        m_editBtn->setStyleSheet(style);
+        m_deleteBtn->setStyleSheet(style);
+    }
+
+signals:
+    void checkStateChanged(const QString &id, bool checked);
+    void editFinished(const QString &id, const QString &newText);
+    void editCancelled(const QString &id);
+    void deleteRequested(const QString &id);
+
+protected:
+    void keyPressEvent(QKeyEvent *event) override
+    {
+        if (event->key() == Qt::Key_Escape && m_stack->currentIndex() == 1) {
+            cancelEdit();
+            return;
+        }
+        QWidget::keyPressEvent(event);
+    }
+
+private:
+    void commitEdit()
+    {
+        QString newText = m_editor->text().trimmed();
+        if (newText.isEmpty()) {
+            cancelEdit();
+            return;
+        }
+        m_label->setText(newText);
+        m_stack->setCurrentIndex(0);
+        emit editFinished(m_id, newText);
+    }
+
+    void cancelEdit()
+    {
+        m_stack->setCurrentIndex(0);
+        emit editCancelled(m_id);
+    }
+
+    QString m_id;
+    QCheckBox *m_checkBox;
+    QStackedWidget *m_stack;
+    QLabel *m_label;
+    QLineEdit *m_editor;
+    QPushButton *m_editBtn;
+    QPushButton *m_deleteBtn;
+};
 
 // ---------------------------------------------------------------------------
 // Constructor
@@ -197,50 +317,10 @@ QWidget *TaskWidget::buildTaskListView()
     m_taskList = new QListWidget(page);
     m_taskList->setStyleSheet(kListStyle);
     m_taskList->setAlternatingRowColors(false);
-    m_taskList->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_taskList->setSelectionMode(QAbstractItemView::NoSelection);
+    m_taskList->setFocusPolicy(Qt::NoFocus);
+    m_taskList->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
     lay->addWidget(m_taskList, /*stretch=*/1);
-
-    connect(m_taskList, &QListWidget::itemChanged,
-            this, &TaskWidget::onItemCheckChanged);
-
-    // --- Action buttons row 1 ---
-    auto *btnRow1 = new QHBoxLayout;
-    btnRow1->setSpacing(6);
-
-    m_btnAdd = new QPushButton(loc("+ Add"), page);
-    m_btnAdd->setStyleSheet(kBtnStyle);
-    btnRow1->addWidget(m_btnAdd);
-
-    m_btnEdit = new QPushButton(loc("\u270E Edit"), page); // ✎
-    m_btnEdit->setStyleSheet(kBtnStyle);
-    btnRow1->addWidget(m_btnEdit);
-
-    m_btnDelete = new QPushButton(loc("\U0001F5D1 Delete"), page); // 🗑
-    m_btnDelete->setStyleSheet(kBtnStyle);
-    btnRow1->addWidget(m_btnDelete);
-
-    lay->addLayout(btnRow1);
-
-    // --- Action buttons row 2 ---
-    auto *btnRow2 = new QHBoxLayout;
-    btnRow2->setSpacing(6);
-
-    m_btnToggle = new QPushButton(loc("\u2713 Toggle"), page); // ✓
-    m_btnToggle->setStyleSheet(kBtnStyle);
-    btnRow2->addWidget(m_btnToggle);
-
-    m_btnCleanup = new QPushButton(loc("\U0001F9F9 Cleanup"), page); // 🧹
-    m_btnCleanup->setStyleSheet(kBtnStyle);
-    btnRow2->addWidget(m_btnCleanup);
-
-    lay->addLayout(btnRow2);
-
-    // Connections
-    connect(m_btnAdd,     &QPushButton::clicked, this, &TaskWidget::onAddTask);
-    connect(m_btnEdit,    &QPushButton::clicked, this, &TaskWidget::onEditTask);
-    connect(m_btnDelete,  &QPushButton::clicked, this, &TaskWidget::onDeleteTask);
-    connect(m_btnToggle,  &QPushButton::clicked, this, &TaskWidget::onToggleTask);
-    connect(m_btnCleanup, &QPushButton::clicked, this, &TaskWidget::onCleanup);
 
     return page;
 }
@@ -336,13 +416,6 @@ void TaskWidget::refreshTexts()
     m_btnNext->setToolTip(loc("Next day"));
     m_btnToday->setToolTip(loc("Go to today"));
 
-    // Action buttons
-    m_btnAdd->setText(loc("+ Add"));
-    m_btnEdit->setText(loc("\u270E Edit"));
-    m_btnDelete->setText(loc("\U0001F5D1 Delete"));
-    m_btnToggle->setText(loc("\u2713 Toggle"));
-    m_btnCleanup->setText(loc("\U0001F9F9 Cleanup"));
-
     // Font size control
     m_fontLabel->setText(loc("Font Size:"));
     m_fontSpinBox->setToolTip(loc("Adjust task list font size"));
@@ -379,17 +452,49 @@ void TaskWidget::refreshDateNav()
 // ---------------------------------------------------------------------------
 void TaskWidget::populateTaskList()
 {
-    // Block signals while rebuilding to avoid spurious itemChanged emissions
     m_taskList->blockSignals(true);
     m_taskList->clear();
 
     const auto tasks = m_data->loadTasks(m_currentDate);
     for (const auto &t : tasks) {
-        auto *item = new QListWidgetItem(t.text, m_taskList);
-        item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-        item->setCheckState(t.completed ? Qt::Checked : Qt::Unchecked);
-        item->setData(Qt::UserRole, t.id);
-        // order is implicit via list position (already sorted by TaskData)
+        auto *item = new QListWidgetItem(m_taskList);
+        auto *row = new TaskRow(t.id, t.text, t.completed, m_taskList);
+
+        connect(row, &TaskRow::checkStateChanged, this, &TaskWidget::onRowChecked);
+        connect(row, &TaskRow::editFinished, this, &TaskWidget::onRowEditFinished);
+        connect(row, &TaskRow::editCancelled, this, &TaskWidget::onRowEditCancelled);
+        connect(row, &TaskRow::deleteRequested, this, &TaskWidget::onRowDelete);
+
+        m_taskList->setItemWidget(item, row);
+        item->setSizeHint(row->sizeHint());
+    }
+
+    {
+        auto *addItem = new QListWidgetItem(m_taskList);
+        auto *addBtn = new QPushButton(
+            QStringLiteral("+ ") + loc("Add Task"), m_taskList);
+        addBtn->setStyleSheet(kBtnStyle);
+        addBtn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        connect(addBtn, &QPushButton::clicked, this, &TaskWidget::onAddTask);
+
+        m_taskList->setItemWidget(addItem, addBtn);
+        addItem->setSizeHint(addBtn->sizeHint());
+    }
+
+    {
+        auto *cleanupItem = new QListWidgetItem(m_taskList);
+        auto *cleanupWidget = new QWidget(m_taskList);
+        auto *cl = new QHBoxLayout(cleanupWidget);
+        cl->setContentsMargins(4, 0, 4, 2);
+        cl->addStretch();
+        auto *cleanupBtn = new QPushButton(QStringLiteral("\U0001F9F9"), cleanupWidget);
+        cleanupBtn->setFixedSize(24, 24);
+        cleanupBtn->setFlat(true);
+        cleanupBtn->setToolTip(loc("Cleanup"));
+        connect(cleanupBtn, &QPushButton::clicked, this, &TaskWidget::onCleanup);
+        cl->addWidget(cleanupBtn);
+        m_taskList->setItemWidget(cleanupItem, cleanupWidget);
+        cleanupItem->setSizeHint(cleanupWidget->sizeHint());
     }
 
     m_taskList->blockSignals(false);
@@ -401,14 +506,21 @@ void TaskWidget::populateTaskList()
 void TaskWidget::saveCurrentList()
 {
     QList<TaskItem> tasks;
-    tasks.reserve(m_taskList->count());
 
-    for (int i = 0; i < m_taskList->count(); ++i) {
+    // Iterate all items except the last two (Add row + Cleanup row)
+    int taskCount = m_taskList->count() - 2;
+    tasks.reserve(taskCount);
+
+    for (int i = 0; i < taskCount; ++i) {
         auto *item = m_taskList->item(i);
+        auto *row = qobject_cast<TaskRow *>(m_taskList->itemWidget(item));
+        if (!row)
+            continue;
+
         TaskItem t;
-        t.id        = item->data(Qt::UserRole).toString();
-        t.text      = item->text();
-        t.completed = (item->checkState() == Qt::Checked);
+        t.id        = row->id();
+        t.text      = row->text();
+        t.completed = row->isChecked();
         t.order     = i;
         tasks.append(t);
     }
@@ -427,15 +539,17 @@ void TaskWidget::updateStatus()
         return;
     }
 
-    int total = m_taskList->count();
+    // Count real tasks (exclude Add row and Cleanup row at the end)
+    int total = m_taskList->count() - 2;
     int done  = 0;
     for (int i = 0; i < total; ++i) {
-        if (m_taskList->item(i)->checkState() == Qt::Checked)
+        auto *row = qobject_cast<TaskRow *>(m_taskList->itemWidget(m_taskList->item(i)));
+        if (row && row->isChecked())
             ++done;
     }
 
-        m_statusLabel->setText(
-            loc("%1 tasks, %2 done").arg(total).arg(done));
+    m_statusLabel->setText(
+        loc("%1 tasks, %2 done").arg(total).arg(done));
 }
 
 // ---------------------------------------------------------------------------
@@ -450,11 +564,34 @@ void TaskWidget::applyFontSize()
 
     m_taskList->setStyleSheet(listStyle);
 
-    m_btnAdd->setStyleSheet(btnStyle);
-    m_btnEdit->setStyleSheet(btnStyle);
-    m_btnDelete->setStyleSheet(btnStyle);
-    m_btnToggle->setStyleSheet(btnStyle);
-    m_btnCleanup->setStyleSheet(btnStyle);
+    // Apply font size to all TaskRow widgets
+    for (int i = 0; i < m_taskList->count() - 2; ++i) {
+        auto *row = qobject_cast<TaskRow *>(m_taskList->itemWidget(m_taskList->item(i)));
+        if (row) {
+            row->setTaskFontSize(m_taskFontSize);
+            row->setButtonStyle(btnStyle);
+        }
+    }
+
+    // Style the "Add" row button (second-to-last item)
+    if (m_taskList->count() >= 2) {
+        auto *addBtn = qobject_cast<QPushButton *>(
+            m_taskList->itemWidget(m_taskList->item(m_taskList->count() - 2)));
+        if (addBtn)
+            addBtn->setStyleSheet(btnStyle);
+    }
+
+    // Cleanup row button (last item) – find the button inside its widget
+    if (m_taskList->count() >= 1) {
+        auto *cleanupWidget = m_taskList->itemWidget(m_taskList->item(m_taskList->count() - 1));
+        if (cleanupWidget) {
+            auto *cleanupBtn = cleanupWidget->findChild<QPushButton *>();
+            if (cleanupBtn)
+                cleanupBtn->setStyleSheet(btnStyle);
+        }
+    }
+
+    // Create view buttons
     m_btnCreateEmpty->setStyleSheet(btnStyle);
     m_btnInheritAll->setStyleSheet(btnStyle);
     m_btnInheritIncomplete->setStyleSheet(btnStyle);
@@ -511,66 +648,71 @@ void TaskWidget::onDateEditChanged(const QDate &date)
 // ---------------------------------------------------------------------------
 void TaskWidget::onAddTask()
 {
-    bool ok = false;
-    QString text = QInputDialog::getText(
-        this, loc("Add Task"), loc("Task Text:"),
-        QLineEdit::Normal, QString(), &ok);
-
-    if (!ok || text.trimmed().isEmpty())
-        return;
-
-    // Generate new ID
     QString newId = QUuid::createUuid().toString(QUuid::WithoutBraces);
 
-    // Build new item
-    auto *item = new QListWidgetItem(text.trimmed(), m_taskList);
-    item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-    item->setCheckState(Qt::Unchecked);
-    item->setData(Qt::UserRole, newId);
+    // Insert new empty task row just before the Add row
+    int insertPos = m_taskList->count() - 2; // before add + cleanup rows
+    if (insertPos < 0) insertPos = 0;
 
+    auto *item = new QListWidgetItem;
+    auto *row = new TaskRow(newId, QString(), false, m_taskList);
+
+    connect(row, &TaskRow::checkStateChanged, this, &TaskWidget::onRowChecked);
+    connect(row, &TaskRow::editFinished, this, &TaskWidget::onRowEditFinished);
+    connect(row, &TaskRow::editCancelled, this, &TaskWidget::onRowEditCancelled);
+    connect(row, &TaskRow::deleteRequested, this, &TaskWidget::onRowDelete);
+
+    m_taskList->insertItem(insertPos, item);
+    m_taskList->setItemWidget(item, row);
+    item->setSizeHint(row->sizeHint());
+
+    // Immediately start inline editing
+    row->startEditing();
+}
+
+void TaskWidget::onRowChecked(const QString &id, bool checked)
+{
+    Q_UNUSED(id);
+    Q_UNUSED(checked);
     saveCurrentList();
 }
 
-void TaskWidget::onEditTask()
+void TaskWidget::onRowEditFinished(const QString &id, const QString &newText)
 {
-    auto *item = m_taskList->currentItem();
-    if (!item)
+    Q_UNUSED(newText);
+    auto *row = findRowById(id);
+    if (!row)
         return;
-
-    bool ok = false;
-    QString newText = QInputDialog::getText(
-        this, loc("Edit Task"), loc("Task Text:"),
-        QLineEdit::Normal, item->text(), &ok);
-
-    if (!ok || newText.trimmed().isEmpty())
-        return;
-
-    item->setText(newText.trimmed());
     saveCurrentList();
+    if (m_taskList->count() == 3)
+        refreshAll();
 }
 
-void TaskWidget::onDeleteTask()
+void TaskWidget::onRowEditCancelled(const QString &id)
 {
-    auto *item = m_taskList->currentItem();
-    if (!item)
-        return;
-
-    int row = m_taskList->row(item);
-    delete m_taskList->takeItem(row);
-    saveCurrentList();
+    auto *row = findRowById(id);
+    if (row && row->text().isEmpty()) {
+        for (int i = 0; i < m_taskList->count() - 2; ++i) {
+            auto *r = qobject_cast<TaskRow *>(m_taskList->itemWidget(m_taskList->item(i)));
+            if (r && r->id() == id) {
+                delete m_taskList->takeItem(i);
+                saveCurrentList();
+                return;
+            }
+        }
+    }
 }
 
-void TaskWidget::onToggleTask()
+void TaskWidget::onRowDelete(const QString &id)
 {
-    auto *item = m_taskList->currentItem();
-    if (!item)
-        return;
-
-    Qt::CheckState newState = (item->checkState() == Qt::Checked)
-                                  ? Qt::Unchecked
-                                  : Qt::Checked;
-    item->setCheckState(newState);
-    saveCurrentList();
+    for (int i = 0; i < m_taskList->count() - 2; ++i) {
+        auto *row = qobject_cast<TaskRow *>(m_taskList->itemWidget(m_taskList->item(i)));
+        if (row && row->id() == id) {
+            delete m_taskList->takeItem(i);
+            saveCurrentList();
+            return;
+        }
+    }
 }
 
 void TaskWidget::onCleanup()
@@ -582,14 +724,6 @@ void TaskWidget::onCleanup()
 
     // Re-check current date — if the file was among those cleaned, switch view
     refreshAll();
-}
-
-void TaskWidget::onItemCheckChanged(QListWidgetItem * /*item*/)
-{
-    // Only save if we are currently in list view (avoid spurious saves
-    // during populateTaskList which has signals blocked anyway)
-    if (m_stack->currentIndex() == 0 && m_taskList->signalsBlocked() == false)
-        saveCurrentList();
 }
 
 // ---------------------------------------------------------------------------
@@ -667,3 +801,18 @@ void TaskWidget::onInheritIncomplete()
     m_data->inheritIncomplete(source, m_currentDate);
     refreshAll();
 }
+
+// ---------------------------------------------------------------------------
+// Helper – find a TaskRow by task id
+// ---------------------------------------------------------------------------
+TaskRow *TaskWidget::findRowById(const QString &id) const
+{
+    for (int i = 0; i < m_taskList->count() - 2; ++i) {
+        auto *row = qobject_cast<TaskRow *>(m_taskList->itemWidget(m_taskList->item(i)));
+        if (row && row->id() == id)
+            return row;
+    }
+    return nullptr;
+}
+
+#include "taskwidget.moc"

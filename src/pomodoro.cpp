@@ -11,11 +11,32 @@ PomodoroTimer::PomodoroTimer(QObject *parent)
 void PomodoroTimer::applyDuration()
 {
     switch (m_mode) {
-    case Mode::Work:       m_total = WORK_SEC; break;
-    case Mode::ShortBreak:  m_total = SHORT_SEC; break;
-    case Mode::LongBreak:   m_total = LONG_SEC; break;
+    case Mode::Work:       m_total = m_workSec; break;
+    case Mode::ShortBreak:  m_total = m_shortSec; break;
+    case Mode::LongBreak:   m_total = m_longSec; break;
     }
     m_remaining = m_total;
+}
+
+void PomodoroTimer::setWorkDuration(int minutes)
+{
+    if (minutes < 1 || minutes > 120) return;
+    m_workSec = minutes * 60;
+    if (m_mode == Mode::Work) applyDuration();
+}
+
+void PomodoroTimer::setShortDuration(int minutes)
+{
+    if (minutes < 1 || minutes > 30) return;
+    m_shortSec = minutes * 60;
+    if (m_mode == Mode::ShortBreak) applyDuration();
+}
+
+void PomodoroTimer::setLongDuration(int minutes)
+{
+    if (minutes < 1 || minutes > 60) return;
+    m_longSec = minutes * 60;
+    if (m_mode == Mode::LongBreak) applyDuration();
 }
 
 void PomodoroTimer::start()

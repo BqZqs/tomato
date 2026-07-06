@@ -5,7 +5,6 @@
 
 class TaskData;
 class QListWidget;
-class QListWidgetItem;
 class QPushButton;
 class QLabel;
 class QDateEdit;
@@ -13,6 +12,9 @@ class QStackedWidget;
 class QSpinBox;
 class QVBoxLayout;
 class QHBoxLayout;
+
+// Forward declaration for TaskRow defined in taskwidget.cpp
+class TaskRow;
 
 class TaskWidget : public QWidget {
     Q_OBJECT
@@ -29,11 +31,11 @@ private slots:
 
     // Task list actions
     void onAddTask();
-    void onEditTask();
-    void onDeleteTask();
-    void onToggleTask();
     void onCleanup();
-    void onItemCheckChanged(QListWidgetItem *item);
+    void onRowChecked(const QString &id, bool checked);
+    void onRowEditFinished(const QString &id, const QString &newText);
+    void onRowEditCancelled(const QString &id);
+    void onRowDelete(const QString &id);
 
     // Translation refresh
     void refreshTexts();
@@ -62,6 +64,8 @@ private:
     bool isAtWindowEnd() const;
     QPair<QDate, QDate> navWindow() const;
 
+    TaskRow *findRowById(const QString &id) const;
+
     TaskData *m_data = nullptr;
     QDate m_currentDate;
 
@@ -79,11 +83,6 @@ private:
 
     // Page 0 — task list view
     QListWidget *m_taskList = nullptr;
-    QPushButton *m_btnAdd = nullptr;
-    QPushButton *m_btnEdit = nullptr;
-    QPushButton *m_btnDelete = nullptr;
-    QPushButton *m_btnToggle = nullptr;
-    QPushButton *m_btnCleanup = nullptr;
 
     // Page 1 — create view
     QPushButton *m_btnCreateEmpty = nullptr;

@@ -21,12 +21,20 @@ public:
     QStringList languages() const;
     QString langName(const QString &lang) const;
 
+    int workDuration() const;
+    void setWorkDuration(int min);
+    int shortDuration() const;
+    void setShortDuration(int min);
+    int longDuration() const;
+    void setLongDuration(int min);
+
     // Translate key. Falls back to key if no translation found.
     QString tr(const QString &key) const;
 
 signals:
     void languageChanged();
     void taskFontSizeChanged(int size);
+    void durationsChanged();
 
 private:
     explicit LocaleManager(const QString &dataDir);
@@ -37,6 +45,9 @@ private:
     QString m_settingsPath;
     QString m_currentLang;
     int m_taskFontSize = 16;
+    int m_workDur = 25;
+    int m_shortDur = 5;
+    int m_longDur = 15;
 
     // lang -> {displayName, nativeName}
     struct LangMeta {

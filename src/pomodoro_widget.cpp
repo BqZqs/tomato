@@ -2,11 +2,13 @@
 #include "lang.h"
 
 #include <QApplication>
+#include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QRadioButton>
+#include <QSpinBox>
 #include <QVBoxLayout>
 
 // ---------------------------------------------------------------------------
@@ -30,6 +32,41 @@ PomodoroWidget::PomodoroWidget(QWidget *parent)
 
     connect(LocaleManager::instance(), &LocaleManager::languageChanged,
             this, &PomodoroWidget::refreshTexts);
+    connect(LocaleManager::instance(), &LocaleManager::durationsChanged,
+            this, [this]() {
+                auto *lm = LocaleManager::instance();
+                m_workSpinBox->blockSignals(true);
+                m_shortSpinBox->blockSignals(true);
+                m_longSpinBox->blockSignals(true);
+                m_workSpinBox->setValue(lm->workDuration());
+                m_shortSpinBox->setValue(lm->shortDuration());
+                m_longSpinBox->setValue(lm->longDuration());
+                m_workSpinBox->blockSignals(false);
+                m_shortSpinBox->blockSignals(false);
+                m_longSpinBox->blockSignals(false);
+                m_timer->setWorkDuration(lm->workDuration());
+                m_timer->setShortDuration(lm->shortDuration());
+                m_timer->setLongDuration(lm->longDuration());
+                refreshDisplay();
+                refreshTexts();
+            });
+
+    // Read initial durations from settings and apply to timer
+    auto *lm = LocaleManager::instance();
+    m_timer->setWorkDuration(lm->workDuration());
+    m_timer->setShortDuration(lm->shortDuration());
+    m_timer->setLongDuration(lm->longDuration());
+    m_workSpinBox->setValue(lm->workDuration());
+    m_shortSpinBox->setValue(lm->shortDuration());
+    m_longSpinBox->setValue(lm->longDuration());
+
+    // Connect spinbox changes
+    connect(m_workSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &PomodoroWidget::onDurationChanged);
+    connect(m_shortSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &PomodoroWidget::onDurationChanged);
+    connect(m_longSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &PomodoroWidget::onDurationChanged);
 
     refreshDisplay();
     refreshButtons();
@@ -71,6 +108,52 @@ void PomodoroWidget::setupUi()
     ml->addWidget(m_rbLong);
     lay->addWidget(m_modeGroup);
 
+    // Duration group
+    m_durGroup = new QGroupBox(loc("Duration"));
+    auto *dl = new QGridLayout(m_durGroup);
+    dl->setSpacing(6);
+
+    m_workSpinBox = new QSpinBox;
+    m_workSpinBox->setRange(1, 120);
+    m_workSpinBox->setValue(m_timer->workMinutes());
+    m_workSpinBox->setFixedWidth(70);
+    m_workSpinBox->setStyleSheet(QStringLiteral("font-size:12px;color:#2c3e50;padding:2px 4px"));
+    m_workLabel = new QLabel(loc("Work:"));
+    m_workLabel->setStyleSheet(QStringLiteral("font-size:12px;color:#7f8c8d"));
+    m_workUnit = new QLabel(loc("min"));
+    m_workUnit->setStyleSheet(QStringLiteral("font-size:12px;color:#7f8c8d"));
+    dl->addWidget(m_workLabel, 0, 0);
+    dl->addWidget(m_workSpinBox, 0, 1);
+    dl->addWidget(m_workUnit, 0, 2);
+
+    m_shortSpinBox = new QSpinBox;
+    m_shortSpinBox->setRange(1, 30);
+    m_shortSpinBox->setValue(m_timer->shortMinutes());
+    m_shortSpinBox->setFixedWidth(70);
+    m_shortSpinBox->setStyleSheet(QStringLiteral("font-size:12px;color:#2c3e50;padding:2px 4px"));
+    m_shortLabel = new QLabel(loc("Short Break:"));
+    m_shortLabel->setStyleSheet(QStringLiteral("font-size:12px;color:#7f8c8d"));
+    m_shortUnit = new QLabel(loc("min"));
+    m_shortUnit->setStyleSheet(QStringLiteral("font-size:12px;color:#7f8c8d"));
+    dl->addWidget(m_shortLabel, 1, 0);
+    dl->addWidget(m_shortSpinBox, 1, 1);
+    dl->addWidget(m_shortUnit, 1, 2);
+
+    m_longSpinBox = new QSpinBox;
+    m_longSpinBox->setRange(1, 60);
+    m_longSpinBox->setValue(m_timer->longMinutes());
+    m_longSpinBox->setFixedWidth(70);
+    m_longSpinBox->setStyleSheet(QStringLiteral("font-size:12px;color:#2c3e50;padding:2px 4px"));
+    m_longLabel = new QLabel(loc("Long Break:"));
+    m_longLabel->setStyleSheet(QStringLiteral("font-size:12px;color:#7f8c8d"));
+    m_longUnit = new QLabel(loc("min"));
+    m_longUnit->setStyleSheet(QStringLiteral("font-size:12px;color:#7f8c8d"));
+    dl->addWidget(m_longLabel, 2, 0);
+    dl->addWidget(m_longSpinBox, 2, 1);
+    dl->addWidget(m_longUnit, 2, 2);
+
+    lay->addWidget(m_durGroup);
+
     auto *bl = new QHBoxLayout;
     m_btnStart = new QPushButton(loc("Start"));
     m_btnReset = new QPushButton(loc("Reset"));
@@ -94,11 +177,20 @@ void PomodoroWidget::refreshTexts()
 {
     m_status->setText(loc("Ready"));
     m_modeGroup->setTitle(loc("Mode"));
-    m_rbWork->setText(loc("Work (25 min)"));
-    m_rbShort->setText(loc("Short Break (5 min)"));
-    m_rbLong->setText(loc("Long Break (15 min)"));
+    m_rbWork->setText(loc("Work (%1 min)").arg(m_timer->workMinutes()));
+    m_rbShort->setText(loc("Short Break (%1 min)").arg(m_timer->shortMinutes()));
+    m_rbLong->setText(loc("Long Break (%1 min)").arg(m_timer->longMinutes()));
+    m_durGroup->setTitle(loc("Duration"));
     m_btnReset->setText(loc("Reset"));
     m_sessions->setText(loc("Sessions: %1").arg(m_timer->completedSessions()));
+
+    // Also update the row labels and units in the Duration group
+    m_workLabel->setText(loc("Work:"));
+    m_shortLabel->setText(loc("Short Break:"));
+    m_longLabel->setText(loc("Long Break:"));
+    m_workUnit->setText(loc("min"));
+    m_shortUnit->setText(loc("min"));
+    m_longUnit->setText(loc("min"));
 
     refreshDisplay();
     refreshButtons();
@@ -179,6 +271,27 @@ void PomodoroWidget::onModeRadio()
     if (m_rbShort->isChecked()) m = PomodoroTimer::Mode::ShortBreak;
     else if (m_rbLong->isChecked()) m = PomodoroTimer::Mode::LongBreak;
     m_timer->setMode(m);
+}
+
+void PomodoroWidget::onDurationChanged()
+{
+    auto *lm = LocaleManager::instance();
+    int w = m_workSpinBox->value();
+    int s = m_shortSpinBox->value();
+    int l = m_longSpinBox->value();
+
+    m_timer->setWorkDuration(w);
+    m_timer->setShortDuration(s);
+    m_timer->setLongDuration(l);
+
+    lm->setWorkDuration(w);
+    lm->setShortDuration(s);
+    lm->setLongDuration(l);
+
+    m_rbWork->setText(loc("Work (%1 min)").arg(m_timer->workMinutes()));
+    m_rbShort->setText(loc("Short Break (%1 min)").arg(m_timer->shortMinutes()));
+    m_rbLong->setText(loc("Long Break (%1 min)").arg(m_timer->longMinutes()));
+    refreshDisplay();
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────

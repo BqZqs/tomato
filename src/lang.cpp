@@ -60,6 +60,16 @@ void LocaleManager::loadSettings()
     m_taskFontSize = doc.object().value(QStringLiteral("taskFontSize")).toInt(16);
     if (m_taskFontSize < 8) m_taskFontSize = 8;
     if (m_taskFontSize > 48) m_taskFontSize = 48;
+
+    m_workDur = doc.object().value(QStringLiteral("workDuration")).toInt(25);
+    if (m_workDur < 1) m_workDur = 1;
+    if (m_workDur > 120) m_workDur = 120;
+    m_shortDur = doc.object().value(QStringLiteral("shortDuration")).toInt(5);
+    if (m_shortDur < 1) m_shortDur = 1;
+    if (m_shortDur > 30) m_shortDur = 30;
+    m_longDur = doc.object().value(QStringLiteral("longDuration")).toInt(15);
+    if (m_longDur < 1) m_longDur = 1;
+    if (m_longDur > 60) m_longDur = 60;
 }
 
 void LocaleManager::saveSettings()
@@ -69,6 +79,9 @@ void LocaleManager::saveSettings()
     QJsonObject obj;
     obj[QStringLiteral("language")] = m_currentLang;
     obj[QStringLiteral("taskFontSize")] = m_taskFontSize;
+    obj[QStringLiteral("workDuration")] = m_workDur;
+    obj[QStringLiteral("shortDuration")] = m_shortDur;
+    obj[QStringLiteral("longDuration")] = m_longDur;
 
     QSaveFile f(m_settingsPath);
     if (!f.open(QIODevice::WriteOnly))
@@ -105,6 +118,45 @@ void LocaleManager::setTaskFontSize(int size)
     m_taskFontSize = size;
     saveSettings();
     emit taskFontSizeChanged(size);
+}
+
+int LocaleManager::workDuration() const
+{
+    return m_workDur;
+}
+
+void LocaleManager::setWorkDuration(int min)
+{
+    if (min < 1 || min > 120 || m_workDur == min) return;
+    m_workDur = min;
+    saveSettings();
+    emit durationsChanged();
+}
+
+int LocaleManager::shortDuration() const
+{
+    return m_shortDur;
+}
+
+void LocaleManager::setShortDuration(int min)
+{
+    if (min < 1 || min > 30 || m_shortDur == min) return;
+    m_shortDur = min;
+    saveSettings();
+    emit durationsChanged();
+}
+
+int LocaleManager::longDuration() const
+{
+    return m_longDur;
+}
+
+void LocaleManager::setLongDuration(int min)
+{
+    if (min < 1 || min > 60 || m_longDur == min) return;
+    m_longDur = min;
+    saveSettings();
+    emit durationsChanged();
 }
 
 QStringList LocaleManager::languages() const
@@ -145,9 +197,14 @@ void LocaleManager::initTranslations()
     add(QStringLiteral("Notes"),          QStringLiteral("\u7B14\u8BB0"),              QStringLiteral("Notes"));           // 笔记
     add(QStringLiteral("Ready"),          QStringLiteral("\u51C6\u5907\u5C31\u7EEA"),  QStringLiteral("Ready"));           // 准备就绪
     add(QStringLiteral("Mode"),           QStringLiteral("\u6A21\u5F0F"),              QStringLiteral("Mode"));            // 模式
-    add(QStringLiteral("Work (25 min)"),  QStringLiteral("\u5DE5\u4F5C (25 \u5206\u949F)"), QStringLiteral("Work (25 min)"));   // 工作
-    add(QStringLiteral("Short Break (5 min)"), QStringLiteral("\u77ED\u4F11\u606F (5 \u5206\u949F)"), QStringLiteral("Short Break (5 min)")); // 短休息
-    add(QStringLiteral("Long Break (15 min)"), QStringLiteral("\u957F\u4F11\u606F (15 \u5206\u949F)"), QStringLiteral("Long Break (15 min)")); // 长休息
+    add(QStringLiteral("Work (%1 min)"),  QStringLiteral("\u5DE5\u4F5C (%1 \u5206\u949F)"), QStringLiteral("Work (%1 min)"));   // 工作
+    add(QStringLiteral("Short Break (%1 min)"), QStringLiteral("\u77ED\u4F11\u606F (%1 \u5206\u949F)"), QStringLiteral("Short Break (%1 min)")); // 短休息
+    add(QStringLiteral("Long Break (%1 min)"), QStringLiteral("\u957F\u4F11\u606F (%1 \u5206\u949F)"), QStringLiteral("Long Break (%1 min)")); // 长休息
+    add(QStringLiteral("Duration"),       QStringLiteral("\u65F6\u957F"),              QStringLiteral("Duration"));        // 时长
+    add(QStringLiteral("Work:"),          QStringLiteral("\u5DE5\u4F5C:"),             QStringLiteral("Work:"));           // 工作
+    add(QStringLiteral("Short Break:"),   QStringLiteral("\u77ED\u4F11\u606F:"),       QStringLiteral("Short Break:"));    // 短休息
+    add(QStringLiteral("Long Break:"),    QStringLiteral("\u957F\u4F11\u606F:"),       QStringLiteral("Long Break:"));     // 长休息
+    add(QStringLiteral("min"),            QStringLiteral("\u5206\u949F"),              QStringLiteral("min"));             // 分钟
     add(QStringLiteral("Start"),          QStringLiteral("\u5F00\u59CB"),              QStringLiteral("Start"));           // 开始
     add(QStringLiteral("Pause"),          QStringLiteral("\u6682\u505C"),              QStringLiteral("Pause"));           // 暂停
     add(QStringLiteral("Resume"),         QStringLiteral("\u7EE7\u7EED"),              QStringLiteral("Resume"));          // 继续
