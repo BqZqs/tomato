@@ -17,6 +17,8 @@ add_executable(Pomodoro
     src/notedata.cpp
     src/notewidget.cpp
     src/lang.cpp
+    src/daily_task_data.cpp
+    src/daily_task_widget.cpp
 )
 
 target_include_directories(Pomodoro PRIVATE src)

@@ -57,9 +57,9 @@ void LocaleManager::loadSettings()
     if (m_langs.contains(lang))
         m_currentLang = lang;
 
-    m_taskFontSize = doc.object().value(QStringLiteral("taskFontSize")).toInt(16);
-    if (m_taskFontSize < 8) m_taskFontSize = 8;
-    if (m_taskFontSize > 48) m_taskFontSize = 48;
+    m_fontOffset = doc.object().value(QStringLiteral("fontOffset")).toInt(0);
+    if (m_fontOffset < -4) m_fontOffset = -4;
+    if (m_fontOffset > 16) m_fontOffset = 16;
 
     m_defaultDuration = doc.object().value(QStringLiteral("defaultDuration")).toInt(25);
     if (m_defaultDuration < 1) m_defaultDuration = 1;
@@ -72,7 +72,7 @@ void LocaleManager::saveSettings()
 
     QJsonObject obj;
     obj[QStringLiteral("language")] = m_currentLang;
-    obj[QStringLiteral("taskFontSize")] = m_taskFontSize;
+    obj[QStringLiteral("fontOffset")] = m_fontOffset;
     obj[QStringLiteral("defaultDuration")] = m_defaultDuration;
 
     QSaveFile f(m_settingsPath);
@@ -98,18 +98,20 @@ void LocaleManager::setLanguage(const QString &lang)
     emit languageChanged();
 }
 
-int LocaleManager::taskFontSize() const
+int LocaleManager::fontOffset() const
 {
-    return m_taskFontSize;
+    return m_fontOffset;
 }
 
-void LocaleManager::setTaskFontSize(int size)
+void LocaleManager::setFontOffset(int offset)
 {
-    if (size < 8 || size > 48 || m_taskFontSize == size)
+    if (offset < -4) offset = -4;
+    if (offset > 16) offset = 16;
+    if (m_fontOffset == offset)
         return;
-    m_taskFontSize = size;
+    m_fontOffset = offset;
     saveSettings();
-    emit taskFontSizeChanged(size);
+    emit fontOffsetChanged(offset);
 }
 
 int LocaleManager::defaultDuration() const
@@ -220,4 +222,14 @@ void LocaleManager::initTranslations()
     add(QStringLiteral("Cleanup"),        QStringLiteral("\u6E05\u7406"),              QStringLiteral("Cleanup"));
     add(QStringLiteral("Inherit All"),    QStringLiteral("\u7EE7\u627F\u5168\u90E8"),  QStringLiteral("Inherit All"));
     add(QStringLiteral("Inherit Incomplete"), QStringLiteral("\u7EE7\u627F\u672A\u5B8C\u6210"), QStringLiteral("Inherit Incomplete"));
+
+    // ── daily_task_widget.cpp ─────────────────────────────────────────
+    add(QStringLiteral("Monday"),         QStringLiteral("\u661F\u671F\u4E00"),        QStringLiteral("Monday"));
+    add(QStringLiteral("Tuesday"),        QStringLiteral("\u661F\u671F\u4E8C"),        QStringLiteral("Tuesday"));
+    add(QStringLiteral("Wednesday"),      QStringLiteral("\u661F\u671F\u4E09"),        QStringLiteral("Wednesday"));
+    add(QStringLiteral("Thursday"),       QStringLiteral("\u661F\u671F\u56DB"),        QStringLiteral("Thursday"));
+    add(QStringLiteral("Friday"),         QStringLiteral("\u661F\u671F\u4E94"),        QStringLiteral("Friday"));
+    add(QStringLiteral("Saturday"),       QStringLiteral("\u661F\u671F\u516D"),        QStringLiteral("Saturday"));
+    add(QStringLiteral("Sunday"),         QStringLiteral("\u661F\u671F\u65E5"),        QStringLiteral("Sunday"));
+    add(QStringLiteral("This Week"),      QStringLiteral("\u672C\u5468"),              QStringLiteral("This Week"));
 }

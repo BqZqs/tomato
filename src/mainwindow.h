@@ -2,6 +2,8 @@
 
 #include <QMainWindow>
 
+class DailyTaskData;
+class DailyTaskWidget;
 class NoteData;
 class TaskData;
 class QComboBox;
@@ -33,19 +35,24 @@ private:
 
     TaskData *m_taskData;
     NoteData *m_noteData;
+    DailyTaskData *m_dailyData;
 
     // Top bar
     QLabel *m_titleLabel;
     QComboBox *m_langCombo;
+    QLabel *m_fontLabel;
+    QComboBox *m_fontCombo;
 
     // Layout splitters
     QSplitter *m_mainSplitter;
     QSplitter *m_leftSplitter;
+    QSplitter *m_rightSplitter;
 
     // Feature widgets
     PomodoroWidget *m_pomodoroWidget;
     TaskWidget *m_taskWidget;
     NoteWidget *m_noteWidget;
+    DailyTaskWidget *m_dailyWidget;
 
     bool m_fullscreen = false;
 };

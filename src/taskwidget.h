@@ -9,7 +9,6 @@ class QPushButton;
 class QLabel;
 class QDateEdit;
 class QStackedWidget;
-class QSpinBox;
 class QVBoxLayout;
 class QHBoxLayout;
 
@@ -22,12 +21,6 @@ class TaskWidget : public QWidget {
 public:
     explicit TaskWidget(TaskData *data, QWidget *parent = nullptr);
 
-public slots:
-    void onTimedSessionFinished(const QString &taskId);
-
-signals:
-    void startTimerForTask(const QString &taskId, int minutes);
-
 private slots:
     // Date navigation
     void onPrevDay();
@@ -37,19 +30,17 @@ private slots:
 
     // Task list actions
     void onAddTask();
-    void onAddTimedTask();
     void onCleanup();
     void onRowChecked(const QString &id, bool checked);
     void onRowEditFinished(const QString &id, const QString &newText);
     void onRowEditCancelled(const QString &id);
     void onRowDelete(const QString &id);
-    void onRowPlay(const QString &id, int minutes);
 
     // Translation refresh
     void refreshTexts();
 
     // Font size
-    void setTaskFontSize(int size);
+    void onFontOffsetChanged(int offset);
 
     // Create actions
     void onCreateEmpty();
@@ -97,9 +88,5 @@ private:
     QPushButton *m_btnInheritAll = nullptr;
     QPushButton *m_btnInheritIncomplete = nullptr;
 
-    // Font size control
     int m_taskFontSize = 16;
-    QLabel *m_fontLabel = nullptr;
-    QSpinBox *m_fontSpinBox = nullptr;
-    QWidget *m_fontControlRow = nullptr;
 };

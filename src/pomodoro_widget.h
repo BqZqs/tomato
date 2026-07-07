@@ -15,6 +15,7 @@ public:
 public slots:
     void refreshTexts();
     void startTimedSession(const QString &taskId, int minutes);
+    void onFontOffsetChanged(int offset);
 
 signals:
     void timedSessionFinished(const QString &taskId);
@@ -38,8 +39,11 @@ private:
     QLabel *m_display;
     QLabel *m_status;
     QLabel *m_sessions;
-    QLabel *m_minUnit;
+    QSpinBox *m_hoursSpinBox;
     QSpinBox *m_minutesSpinBox;
+    QSpinBox *m_secondsSpinBox;
+    QLabel *m_colon1;
+    QLabel *m_colon2;
     QPushButton *m_btnStart;
     QPushButton *m_btnReset;
 

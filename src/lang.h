@@ -16,8 +16,8 @@ public:
 
     QString currentLang() const;
     void setLanguage(const QString &lang);
-    int taskFontSize() const;
-    void setTaskFontSize(int size);
+    int fontOffset() const;
+    void setFontOffset(int offset);
     QStringList languages() const;
     QString langName(const QString &lang) const;
 
@@ -29,7 +29,7 @@ public:
 
 signals:
     void languageChanged();
-    void taskFontSizeChanged(int size);
+    void fontOffsetChanged(int offset);
 
 private:
     explicit LocaleManager(const QString &dataDir);
@@ -39,7 +39,7 @@ private:
 
     QString m_settingsPath;
     QString m_currentLang;
-    int m_taskFontSize = 16;
+    int m_fontOffset = 0;
     int m_defaultDuration = 25;
 
     // lang -> {displayName, nativeName}

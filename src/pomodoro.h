@@ -19,6 +19,7 @@ public:
 
     int durationMinutes() const { return m_durationSec / 60; }
     void setDuration(int minutes);
+    void setDurationSec(int seconds);
 
 public slots:
     void start();

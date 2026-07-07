@@ -22,6 +22,14 @@ void PomodoroTimer::setDuration(int minutes)
         applyDuration();
 }
 
+void PomodoroTimer::setDurationSec(int seconds)
+{
+    if (seconds < 0 || seconds > 359940) return;   // clamp 0..99:59:59
+    m_durationSec = seconds;
+    if (m_state == State::Stopped)
+        applyDuration();
+}
+
 void PomodoroTimer::start()
 {
     if (m_state == State::Running) return;
