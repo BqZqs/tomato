@@ -1,6 +1,7 @@
 #include "notewidget.h"
 #include "notedata.h"
 #include "lang.h"
+#include "theme.h"
 
 #include <QComboBox>
 #include <QDateEdit>
@@ -14,6 +15,7 @@
 #include <QScrollArea>
 #include <QStackedWidget>
 #include <QVBoxLayout>
+#include <QIntValidator>
 
 // ============================================================================
 // NotebookManageDialog — local helper dialog (not exposed in header)
@@ -227,6 +229,9 @@ NoteWidget::NoteWidget(NoteData *data, QWidget *parent)
     setupUi();
     refreshNotebooks();
 
+    if (!m_currentNotebook.isEmpty())
+        openMostRecentNote();
+
     connect(LocaleManager::instance(), &LocaleManager::languageChanged,
             this, &NoteWidget::refreshTexts);
 }
@@ -303,6 +308,46 @@ void NoteWidget::setupUi()
         "QPushButton:hover { color:#1A1A2E;border-color:#9CA3AF; }");
     nbBar->addWidget(m_manageBtn);
 
+    m_saveBtn = new QPushButton(QStringLiteral("\U0001F4BE"));
+    m_saveBtn->setFixedSize(26, 26);
+    m_saveBtn->setStyleSheet(Theme::kIconBtnStyleSheet);
+    m_saveBtn->setToolTip(loc("Save"));
+    nbBar->addWidget(m_saveBtn);
+
+    m_deleteBtn = new QPushButton(QStringLiteral("\U0001F5D1"));
+    m_deleteBtn->setFixedSize(26, 26);
+    m_deleteBtn->setStyleSheet(Theme::kIconBtnStyleSheet);
+    m_deleteBtn->setToolTip(loc("Delete This Note"));
+    nbBar->addWidget(m_deleteBtn);
+
+    auto *noteFontCombo = new QComboBox;
+    noteFontCombo->setEditable(true);
+    noteFontCombo->setInsertPolicy(QComboBox::NoInsert);
+    noteFontCombo->setValidator(new QIntValidator(-4, 16, noteFontCombo));
+    noteFontCombo->addItems({QStringLiteral("-4"), QStringLiteral("-2"),
+                              QStringLiteral("-1"), QStringLiteral("0"),
+                              QStringLiteral("+1"), QStringLiteral("+2"),
+                              QStringLiteral("+4"), QStringLiteral("+8"),
+                              QStringLiteral("+12"), QStringLiteral("+16")});
+    noteFontCombo->setCurrentText(
+        QString::number(LocaleManager::instance()->noteFontOffset()));
+    noteFontCombo->setMaximumWidth(72);
+    noteFontCombo->setStyleSheet(QStringLiteral(
+        "QComboBox { font-size:12px; padding:2px 4px; "
+        "border:1px solid #D1D5DB; border-radius:6px; "
+        "color:#7B7D8C; background:#F8F9FB; }"
+        "QComboBox:hover { border-color:#9CA3AF; }"
+        "QComboBox:focus { border-color:#6C63FF; }"
+        "QComboBox::drop-down { width:20px; border:none; }"
+        "QComboBox::down-arrow { image:none; border-left:4px solid transparent; border-right:4px solid transparent; border-top:5px solid #7B7D8C; margin-right:4px; }"));
+    nbBar->addWidget(noteFontCombo);
+
+    connect(noteFontCombo, &QComboBox::currentTextChanged, this, [](const QString &text) {
+        bool ok;
+        int val = text.toInt(&ok);
+        if (ok) LocaleManager::instance()->setNoteFontOffset(val);
+    });
+
     editorLay->addLayout(nbBar);
 
     // Row 2: Date navigation
@@ -341,6 +386,44 @@ void NoteWidget::setupUi()
         "QPushButton:hover { background:#6C63FF;color:white; }");
     dateBar->addWidget(m_todayBtn);
 
+    m_jumpPrevBtn = new QPushButton(QStringLiteral("|\u25C0"));
+    m_jumpPrevBtn->setFixedSize(32, 30);
+    m_jumpPrevBtn->setToolTip(loc("Jump to previous note"));
+    m_jumpPrevBtn->setStyleSheet(
+        "QPushButton { background:transparent;color:#7B7D8C;border:1px solid #D1D5DB;"
+        "border-radius:4px;font-size:12px; }"
+        "QPushButton:hover { color:#6C63FF;border-color:#6C63FF; }");
+    dateBar->addWidget(m_jumpPrevBtn);
+
+    m_jumpNextBtn = new QPushButton(QStringLiteral("\u25B6|"));
+    m_jumpNextBtn->setFixedSize(32, 30);
+    m_jumpNextBtn->setToolTip(loc("Jump to next note"));
+    m_jumpNextBtn->setStyleSheet(m_jumpPrevBtn->styleSheet());
+    dateBar->addWidget(m_jumpNextBtn);
+
+    m_pageLabel = new QLabel;
+    m_pageLabel->setAlignment(Qt::AlignCenter);
+    m_pageLabel->setMinimumWidth(40);
+    m_pageLabel->setStyleSheet("font-size:11px; color:#7B7D8C;");
+    dateBar->addWidget(m_pageLabel);
+
+    m_firstBtn = new QPushButton(QStringLiteral("\u23EE"));
+    m_firstBtn->setFixedSize(30, 30);
+    m_firstBtn->setToolTip(loc("First page"));
+    m_firstBtn->setStyleSheet(
+        "QPushButton { background:transparent;color:#7B7D8C;border:1px solid #D1D5DB;"
+        "border-radius:4px;font-size:12px; }"
+        "QPushButton:hover { color:#6C63FF;border-color:#6C63FF; }");
+    dateBar->addWidget(m_firstBtn);
+
+    m_lastBtn = new QPushButton(QStringLiteral("\u23ED"));
+    m_lastBtn->setFixedSize(30, 30);
+    m_lastBtn->setStyleSheet(
+        "QPushButton { background:transparent;color:#7B7D8C;border:1px solid #D1D5DB;"
+        "border-radius:4px;font-size:12px; }"
+        "QPushButton:hover { color:#6C63FF;border-color:#6C63FF; }");
+    dateBar->addWidget(m_lastBtn);
+
     editorLay->addLayout(dateBar);
 
     // Row 3: Markdown editor
@@ -352,35 +435,20 @@ void NoteWidget::setupUi()
         "selection-background-color:#EEF2FF; }"
         "QPlainTextEdit:focus { border-color:#6C63FF; }");
     m_editor->setTabStopDistance(32);
+
+    auto updateEditorFont = [this](int offset) {
+        int px = qMax(8, 13 + offset);
+        m_editor->setStyleSheet(
+            QString("QPlainTextEdit { border:1px solid #D1D5DB;border-radius:6px;padding:12px;"
+                    "background:#FFFFFF;color:#1A1A2E;font-family:Consolas,monospace;"
+                    "font-size:%1px;selection-background-color:#EEF2FF; }"
+                    "QPlainTextEdit:focus { border-color:#6C63FF; }").arg(px));
+    };
+    updateEditorFont(LocaleManager::instance()->noteFontOffset());
+    connect(LocaleManager::instance(), &LocaleManager::noteFontOffsetChanged,
+            this, updateEditorFont);
+
     editorLay->addWidget(m_editor, 1);
-
-    // Row 4: Action buttons + dirty indicator
-    auto *bottomBar = new QHBoxLayout;
-    bottomBar->setSpacing(8);
-
-    m_saveBtn = new QPushButton(loc("Save"));
-    m_saveBtn->setMinimumHeight(36);
-    m_saveBtn->setStyleSheet(
-        "QPushButton { background:#22C55E;color:white;border:none;border-radius:4px;"
-        "padding:0 20px;font-size:13px;font-weight:bold; }"
-        "QPushButton:hover { background:#16A34A; }"
-        "QPushButton:disabled { background:#B0B3BF; }");
-    bottomBar->addWidget(m_saveBtn);
-
-    m_deleteBtn = new QPushButton(loc("Delete This Note"));
-    m_deleteBtn->setMinimumHeight(36);
-    m_deleteBtn->setStyleSheet(
-        "QPushButton { background:transparent;color:#EF4444;border:1px solid #EF4444;"
-        "border-radius:4px;padding:0 16px;font-size:12px; }"
-        "QPushButton:hover { background:#EF4444;color:white; }");
-    bottomBar->addWidget(m_deleteBtn);
-
-    m_dirtyLabel = new QLabel;
-    m_dirtyLabel->setStyleSheet("font-size:12px;color:#F59E0B;font-style:italic");
-    m_dirtyLabel->setVisible(false);
-    bottomBar->addWidget(m_dirtyLabel, 1);
-
-    editorLay->addLayout(bottomBar);
 
     m_stack->addWidget(m_editorPage); // index 1
 
@@ -399,6 +467,11 @@ void NoteWidget::setupUi()
     connect(m_editor, &QPlainTextEdit::textChanged, this, &NoteWidget::onTextChanged);
     connect(m_saveBtn, &QPushButton::clicked, this, &NoteWidget::onSave);
     connect(m_deleteBtn, &QPushButton::clicked, this, &NoteWidget::onDeleteNote);
+
+    connect(m_jumpPrevBtn, &QPushButton::clicked, this, &NoteWidget::onJumpPrev);
+    connect(m_jumpNextBtn, &QPushButton::clicked, this, &NoteWidget::onJumpNext);
+    connect(m_firstBtn, &QPushButton::clicked, this, &NoteWidget::onFirst);
+    connect(m_lastBtn, &QPushButton::clicked, this, &NoteWidget::onLast);
 }
 
 // ---------------------------------------------------------------------------
@@ -518,6 +591,7 @@ void NoteWidget::loadNote()
 
     // Placeholder if empty
     m_editor->setPlaceholderText(content.isEmpty() ? loc("Start writing...") : "");
+    updatePageLabel();
 }
 
 void NoteWidget::saveCurrentNoteIfDirty()
@@ -525,7 +599,12 @@ void NoteWidget::saveCurrentNoteIfDirty()
     if (!m_dirty || m_currentNotebook.isEmpty()) return;
 
     const QString content = m_editor->toPlainText();
-    m_data->saveNote(m_currentNotebook, m_currentDate, content);
+    if (content.trimmed().isEmpty()) {
+        if (m_data->hasNote(m_currentNotebook, m_currentDate))
+            m_data->deleteNote(m_currentNotebook, m_currentDate);
+    } else {
+        m_data->saveNote(m_currentNotebook, m_currentDate, content);
+    }
     m_lastSavedText = content;
     m_dirty = false;
     updateDirtyState();
@@ -536,7 +615,12 @@ void NoteWidget::onSave()
     if (m_currentNotebook.isEmpty()) return;
 
     const QString content = m_editor->toPlainText();
-    m_data->saveNote(m_currentNotebook, m_currentDate, content);
+    if (content.trimmed().isEmpty()) {
+        if (m_data->hasNote(m_currentNotebook, m_currentDate))
+            m_data->deleteNote(m_currentNotebook, m_currentDate);
+    } else {
+        m_data->saveNote(m_currentNotebook, m_currentDate, content);
+    }
     m_lastSavedText = content;
     m_dirty = false;
     updateDirtyState();
@@ -581,10 +665,7 @@ void NoteWidget::onTextChanged()
 
 void NoteWidget::updateDirtyState()
 {
-    m_dirtyLabel->setVisible(m_dirty);
-    if (m_dirty) {
-        m_dirtyLabel->setText(loc("\u25CF Unsaved changes"));
-    }
+    m_saveBtn->setEnabled(m_dirty);
 }
 
 // ---------------------------------------------------------------------------
@@ -607,10 +688,63 @@ void NoteWidget::refreshTexts()
     m_nbLabel->setText(loc("Notebook:"));
     m_manageBtn->setText(loc("Manage..."));
     m_todayBtn->setText(loc("Today"));
-    m_saveBtn->setText(loc("Save"));
-    m_deleteBtn->setText(loc("Delete This Note"));
+    m_saveBtn->setToolTip(loc("Save"));
+    m_deleteBtn->setToolTip(loc("Delete This Note"));
+    m_jumpPrevBtn->setToolTip(loc("Jump to previous note"));
+    m_jumpNextBtn->setToolTip(loc("Jump to next note"));
+    m_firstBtn->setToolTip(loc("First page"));
     m_noNBLabel->setText(loc("No notebooks yet.\nCreate one to start."));
     m_createFirstBtn->setText(loc("Create First Notebook"));
     updateDirtyState();
+    loadNote();
+}
+
+void NoteWidget::onJumpPrev() {
+    if (m_currentNotebook.isEmpty()) return;
+    const QList<QDate> dates = m_data->noteDates(m_currentNotebook);
+    if (dates.isEmpty()) return;
+    for (int i = dates.size() - 1; i >= 0; --i) {
+        if (dates[i] < m_currentDate) { setDate(dates[i]); return; }
+    }
+}
+void NoteWidget::onJumpNext() {
+    if (m_currentNotebook.isEmpty()) return;
+    const QList<QDate> dates = m_data->noteDates(m_currentNotebook);
+    if (dates.isEmpty()) return;
+    for (const QDate &d : dates) {
+        if (d > m_currentDate) { setDate(d); return; }
+    }
+}
+void NoteWidget::onFirst() {
+    if (m_currentNotebook.isEmpty()) return;
+    const QList<QDate> dates = m_data->noteDates(m_currentNotebook);
+    if (dates.isEmpty()) return;
+    setDate(dates.first());
+}
+void NoteWidget::onLast() {
+    if (m_currentNotebook.isEmpty()) return;
+    const QList<QDate> dates = m_data->noteDates(m_currentNotebook);
+    if (dates.isEmpty()) return;
+    setDate(dates.last());
+}
+void NoteWidget::updatePageLabel() {
+    if (m_currentNotebook.isEmpty()) { m_pageLabel->clear(); return; }
+    const QList<QDate> dates = m_data->noteDates(m_currentNotebook);
+    int idx = dates.indexOf(m_currentDate);
+    if (idx >= 0)
+        m_pageLabel->setText(QStringLiteral("%1 / %2").arg(idx + 1).arg(dates.size()));
+    else
+        m_pageLabel->setText(QStringLiteral("- / %1").arg(dates.size()));
+}
+
+void NoteWidget::openMostRecentNote() {
+    if (m_currentNotebook.isEmpty()) return;
+    const QList<QDate> dates = m_data->noteDates(m_currentNotebook);
+    if (!dates.isEmpty()) {
+        m_currentDate = dates.last();
+        m_dateEdit->blockSignals(true);
+        m_dateEdit->setDate(m_currentDate);
+        m_dateEdit->blockSignals(false);
+    }
     loadNote();
 }

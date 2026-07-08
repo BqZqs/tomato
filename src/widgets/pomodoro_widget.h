@@ -18,7 +18,7 @@ public slots:
     void onFontOffsetChanged(int offset);
 
 signals:
-    void timedSessionFinished(const QString &taskId);
+    void timedSessionFinished(const QString &taskId, int elapsedMinutes);
 
 private slots:
     void onTick(int remaining);
@@ -27,6 +27,7 @@ private slots:
     void onSessionCompleted(int n);
     void onStartPause();
     void onReset();
+    void onFinish();
 
 private:
     void setupUi();
@@ -46,6 +47,7 @@ private:
     QLabel *m_colon2;
     QPushButton *m_btnStart;
     QPushButton *m_btnReset;
+    QPushButton *m_btnFinish;
 
     QString m_activeTaskId;
 };

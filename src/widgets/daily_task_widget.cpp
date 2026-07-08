@@ -71,7 +71,7 @@ public:
 
         m_playBtn = new QPushButton(QStringLiteral("\u25B6"), this); // ▶
         m_playBtn->setFixedSize(26, 26);
-        m_playBtn->setFlat(true);
+        m_playBtn->setStyleSheet(Theme::kIconBtnStyleSheet);
         m_playBtn->setToolTip(loc("Start timer for this task"));
         connect(m_playBtn, &QPushButton::clicked, this, [this]() {
             emit playRequested(m_id, m_durationMinutes);
@@ -97,14 +97,14 @@ public:
 
         m_editBtn = new QPushButton(QStringLiteral("\u270E"), this); // ✎
         m_editBtn->setFixedSize(26, 26);
-        m_editBtn->setFlat(true);
+        m_editBtn->setStyleSheet(Theme::kIconBtnStyleSheet);
         m_editBtn->setToolTip(loc("Edit Task"));
         connect(m_editBtn, &QPushButton::clicked, this, &DailyTaskRow::startEditing);
         lay->addWidget(m_editBtn);
 
         m_deleteBtn = new QPushButton(QStringLiteral("\U0001F5D1"), this); // 🗑
         m_deleteBtn->setFixedSize(26, 26);
-        m_deleteBtn->setFlat(true);
+        m_deleteBtn->setStyleSheet(Theme::kIconBtnStyleSheet);
         m_deleteBtn->setToolTip(loc("Delete"));
         connect(m_deleteBtn, &QPushButton::clicked, this, [this]() {
             emit deleteRequested(m_id);
@@ -280,6 +280,16 @@ void DailyTaskWidget::buildUi()
         connect(m_thisWeekBtn, &QPushButton::clicked, this, &DailyTaskWidget::onThisWeek);
         row->addWidget(m_thisWeekBtn);
 
+        auto *deleteAllBtn = new QPushButton(QStringLiteral("\U0001F5D1"), this);
+        deleteAllBtn->setFixedSize(28, 28);
+        deleteAllBtn->setStyleSheet(Theme::kIconBtnStyleSheet);
+        deleteAllBtn->setToolTip(loc("Delete all tasks for this day"));
+        connect(deleteAllBtn, &QPushButton::clicked, this, [this]() {
+            m_data->saveTasks(m_weekday, {});
+            populateTaskList();
+        });
+        row->addWidget(deleteAllBtn);
+
         lay->addLayout(row);
     }
 
@@ -422,8 +432,9 @@ void DailyTaskWidget::onRowPlay(const QString &id, int minutes)
     emit startTimerForTask(id, minutes);
 }
 
-void DailyTaskWidget::onTimedSessionFinished(const QString &taskId)
+void DailyTaskWidget::onTimedSessionFinished(const QString &taskId, int elapsedMinutes)
 {
+    Q_UNUSED(elapsedMinutes);
     auto *row = findRowById(taskId);
     if (!row) return;
     row->setCompleted(true);

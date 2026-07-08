@@ -14,7 +14,7 @@ class DailyTaskWidget : public QWidget {
 public:
     explicit DailyTaskWidget(DailyTaskData *data, QWidget *parent = nullptr);
 public slots:
-    void onTimedSessionFinished(const QString &taskId);
+    void onTimedSessionFinished(const QString &taskId, int elapsedMinutes);
     void refreshTexts();
 signals:
     void startTimerForTask(const QString &taskId, int minutes);

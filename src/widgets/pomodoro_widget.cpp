@@ -22,6 +22,7 @@ PomodoroWidget::PomodoroWidget(QWidget *parent)
 
     connect(m_btnStart, &QPushButton::clicked, this, &PomodoroWidget::onStartPause);
     connect(m_btnReset, &QPushButton::clicked, this, &PomodoroWidget::onReset);
+    connect(m_btnFinish, &QPushButton::clicked, this, &PomodoroWidget::onFinish);
 
     connect(LocaleManager::instance(), &LocaleManager::languageChanged,
             this, &PomodoroWidget::refreshTexts);
@@ -141,6 +142,14 @@ void PomodoroWidget::setupUi()
         QStringLiteral("font-size:16px;font-weight:bold;color:#EF4444;"));
     cl->addWidget(m_btnReset);
 
+    m_btnFinish = new QPushButton(QStringLiteral("\u23ED")); // ⏭
+    m_btnFinish->setFixedSize(40, 36);
+    m_btnFinish->setStyleSheet(
+        QStringLiteral("font-size:14px;font-weight:bold;color:#6C63FF;"));
+    m_btnFinish->setToolTip(loc("Finish early"));
+    m_btnFinish->setEnabled(false);
+    cl->addWidget(m_btnFinish);
+
     cl->addStretch();
     lay->addLayout(cl);
 
@@ -159,6 +168,7 @@ void PomodoroWidget::refreshTexts()
     m_status->setText(loc("Ready"));
     m_status->setStyleSheet(QStringLiteral("font-size:13px;color:#7B7D8C"));
     m_btnReset->setText(QStringLiteral("\u25A0"));
+    m_btnFinish->setToolTip(loc("Finish early"));
     m_sessions->setText(loc("Sessions: %1").arg(m_timer->completedSessions()));
     refreshDisplay();
     refreshButtons();
@@ -182,7 +192,8 @@ void PomodoroWidget::onFinished()
     QApplication::beep();
 
     if (!m_activeTaskId.isEmpty()) {
-        emit timedSessionFinished(m_activeTaskId);
+        int elapsedMin = m_timer->totalSeconds() / 60;
+        emit timedSessionFinished(m_activeTaskId, elapsedMin);
         m_activeTaskId.clear();
     }
 
@@ -223,6 +234,19 @@ void PomodoroWidget::onStartPause()
 
 void PomodoroWidget::onReset() { m_timer->reset(); }
 
+void PomodoroWidget::onFinish()
+{
+    int elapsedSec = m_timer->totalSeconds() - m_timer->remainingSeconds();
+    int elapsedMin = (elapsedSec + 30) / 60; // round to nearest minute
+    if (elapsedMin < 1) elapsedMin = 1;
+    m_timer->reset();
+
+    if (!m_activeTaskId.isEmpty()) {
+        emit timedSessionFinished(m_activeTaskId, elapsedMin);
+        m_activeTaskId.clear();
+    }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 void PomodoroWidget::refreshDisplay()
@@ -232,6 +256,9 @@ void PomodoroWidget::refreshDisplay()
 
 void PomodoroWidget::refreshButtons()
 {
+    bool running = (m_timer->state() == PomodoroTimer::State::Running);
+    m_btnFinish->setEnabled(running);
+
     switch (m_timer->state()) {
     case PomodoroTimer::State::Running: m_btnStart->setText(QStringLiteral("\u23F8")); break;  // ⏸
     case PomodoroTimer::State::Paused:  m_btnStart->setText(QStringLiteral("\u25B6")); break;  // ▶
@@ -262,6 +289,8 @@ void PomodoroWidget::onFontOffsetChanged(int offset)
         QStringLiteral("font-size:%1px;font-weight:bold;color:#22C55E;").arg(btnSize));
     m_btnReset->setStyleSheet(
         QStringLiteral("font-size:%1px;font-weight:bold;color:#EF4444;").arg(btnSize));
+    m_btnFinish->setStyleSheet(
+        QStringLiteral("font-size:%1px;font-weight:bold;color:#6C63FF;").arg(btnSize - 2));
 }
 
 QString PomodoroWidget::fmt(int secs)

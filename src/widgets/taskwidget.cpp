@@ -58,14 +58,14 @@ public:
 
         m_editBtn = new QPushButton(QStringLiteral("\u270E"), this); // ✎
         m_editBtn->setFixedSize(26, 26);
-        m_editBtn->setFlat(true);
+        m_editBtn->setStyleSheet(Theme::kIconBtnStyleSheet);
         m_editBtn->setToolTip(loc("Edit Task"));
         connect(m_editBtn, &QPushButton::clicked, this, &TaskRow::startEditing);
         lay->addWidget(m_editBtn);
 
         m_deleteBtn = new QPushButton(QStringLiteral("\U0001F5D1"), this); // 🗑
         m_deleteBtn->setFixedSize(26, 26);
-        m_deleteBtn->setFlat(true);
+        m_deleteBtn->setStyleSheet(Theme::kIconBtnStyleSheet);
         m_deleteBtn->setToolTip(loc("Delete"));
         connect(m_deleteBtn, &QPushButton::clicked, this, [this]() {
             emit deleteRequested(m_id);
@@ -236,6 +236,18 @@ QHBoxLayout *TaskWidget::buildDateNav()
     m_btnToday->setStyleSheet(Theme::kNavBtnStyleSheet);
     m_btnToday->setToolTip(loc("Go to today"));
     row->addWidget(m_btnToday);
+
+    auto *deleteAllBtn = new QPushButton(QStringLiteral("\U0001F5D1"), this);
+    deleteAllBtn->setFixedSize(28, 28);
+    deleteAllBtn->setStyleSheet(Theme::kIconBtnStyleSheet);
+    deleteAllBtn->setToolTip(loc("Delete all tasks for this date"));
+    connect(deleteAllBtn, &QPushButton::clicked, this, [this]() {
+        if (m_data->hasTaskFile(m_currentDate)) {
+            m_data->deleteTaskFile(m_currentDate);
+            refreshAll();
+        }
+    });
+    row->addWidget(deleteAllBtn);
 
     // Connections
     connect(m_btnPrev,  &QPushButton::clicked, this, &TaskWidget::onPrevDay);

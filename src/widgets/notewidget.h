@@ -29,6 +29,10 @@ private slots:
     void onDeleteNote();
     void onTextChanged();
     void refreshTexts();
+    void onJumpPrev();
+    void onJumpNext();
+    void onFirst();
+    void onLast();
 
 private:
     void setupUi();
@@ -37,6 +41,8 @@ private:
     void loadNote();
     void saveCurrentNoteIfDirty();
     void updateDirtyState();
+    void openMostRecentNote();
+    void updatePageLabel();
 
     NoteData *m_data = nullptr;
     QString m_currentNotebook;
@@ -58,10 +64,16 @@ private:
     // Editor
     QPlainTextEdit *m_editor = nullptr;
 
-    // Bottom bar
+    // Notebook bar icon buttons
     QPushButton *m_saveBtn = nullptr;
     QPushButton *m_deleteBtn = nullptr;
-    QLabel *m_dirtyLabel = nullptr;
+
+    // Jump navigation
+    QPushButton *m_jumpPrevBtn = nullptr;
+    QPushButton *m_jumpNextBtn = nullptr;
+    QPushButton *m_firstBtn = nullptr;
+    QPushButton *m_lastBtn = nullptr;
+    QLabel *m_pageLabel = nullptr;
 
     // No-notebooks view
     QStackedWidget *m_stack = nullptr;

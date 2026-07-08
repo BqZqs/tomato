@@ -61,6 +61,10 @@ void LocaleManager::loadSettings()
     if (m_fontOffset < -4) m_fontOffset = -4;
     if (m_fontOffset > 16) m_fontOffset = 16;
 
+    m_noteFontOffset = doc.object().value(QStringLiteral("noteFontOffset")).toInt(0);
+    if (m_noteFontOffset < -4) m_noteFontOffset = -4;
+    if (m_noteFontOffset > 16) m_noteFontOffset = 16;
+
     m_defaultDuration = doc.object().value(QStringLiteral("defaultDuration")).toInt(25);
     if (m_defaultDuration < 1) m_defaultDuration = 1;
     if (m_defaultDuration > 120) m_defaultDuration = 120;
@@ -73,6 +77,7 @@ void LocaleManager::saveSettings()
     QJsonObject obj;
     obj[QStringLiteral("language")] = m_currentLang;
     obj[QStringLiteral("fontOffset")] = m_fontOffset;
+    obj[QStringLiteral("noteFontOffset")] = m_noteFontOffset;
     obj[QStringLiteral("defaultDuration")] = m_defaultDuration;
 
     QSaveFile f(m_settingsPath);
@@ -112,6 +117,22 @@ void LocaleManager::setFontOffset(int offset)
     m_fontOffset = offset;
     saveSettings();
     emit fontOffsetChanged(offset);
+}
+
+int LocaleManager::noteFontOffset() const
+{
+    return m_noteFontOffset;
+}
+
+void LocaleManager::setNoteFontOffset(int offset)
+{
+    if (offset < -4) offset = -4;
+    if (offset > 16) offset = 16;
+    if (m_noteFontOffset == offset)
+        return;
+    m_noteFontOffset = offset;
+    saveSettings();
+    emit noteFontOffsetChanged(offset);
 }
 
 int LocaleManager::defaultDuration() const
@@ -169,6 +190,7 @@ void LocaleManager::initTranslations()
     add(QStringLiteral("Running..."),     QStringLiteral("\u8FD0\u884C\u4E2D..."),     QStringLiteral("Running..."));      // 运行中
     add(QStringLiteral("Paused"),         QStringLiteral("\u5DF2\u6682\u505C"),        QStringLiteral("Paused"));          // 已暂停
     add(QStringLiteral("Done!"),          QStringLiteral("\u5B8C\u6210\uFF01"),        QStringLiteral("Done!"));           // 完成！
+    add(QStringLiteral("Finish early"),   QStringLiteral("\u63D0\u524D\u5B8C\u6210"),    QStringLiteral("Finish early"));    // 提前完成
 
     // ── taskwidget.cpp ────────────────────────────────────────────────
     add(QStringLiteral("Today"),          QStringLiteral("\u4ECA\u5929"),              QStringLiteral("Today"));           // 今天
@@ -216,10 +238,16 @@ void LocaleManager::initTranslations()
     add(QStringLiteral("Confirm Delete"), QStringLiteral("\u786E\u8BA4\u5220\u9664"),  QStringLiteral("Confirm Delete"));   // 确认删除
     add(QStringLiteral("Delete note for %1?"), QStringLiteral("\u5220\u9664 %1 \u7684\u7B14\u8BB0\uFF1F"), QStringLiteral("Delete note for %1?")); // 删除...的笔记？
     add(QStringLiteral("Start writing..."), QStringLiteral("\u5F00\u59CB\u5199\u4F5C..."), QStringLiteral("Start writing...")); // 开始写作...
+    add(QStringLiteral("Jump to previous note"), QStringLiteral("\u8DF3\u5230\u4E0A\u4E00\u7BC7\u7B14\u8BB0"), QStringLiteral("Jump to previous note")); // 跳到上一篇笔记
+    add(QStringLiteral("Jump to next note"), QStringLiteral("\u8DF3\u5230\u4E0B\u4E00\u7BC7\u7B14\u8BB0"), QStringLiteral("Jump to next note"));
+    add(QStringLiteral("First page"), QStringLiteral("\u9996\u9875"), QStringLiteral("First page")); // 首页
+    add(QStringLiteral("Last page"), QStringLiteral("\u5C3E\u9875"), QStringLiteral("Last page")); // 尾页 // 跳到下一篇笔记
     add(QStringLiteral("Language"),       QStringLiteral("\u8BED\u8A00"),              QStringLiteral("Language"));        // 语言
     add(QStringLiteral("Font Size:"),     QStringLiteral("\u5B57\u4F53\u5927\u5C0F:"),  QStringLiteral("Font Size:"));       // 字体大小
     add(QStringLiteral("Adjust task list font size"), QStringLiteral("\u8C03\u6574\u4EFB\u52A1\u5217\u8868\u5B57\u4F53\u5927\u5C0F"), QStringLiteral("Adjust task list font size"));
     add(QStringLiteral("Cleanup"),        QStringLiteral("\u6E05\u7406"),              QStringLiteral("Cleanup"));
+    add(QStringLiteral("Delete all tasks for this date"), QStringLiteral("\u5220\u9664\u5F53\u524D\u65E5\u671F\u6240\u6709\u8BA1\u5212\u9879"), QStringLiteral("Delete all tasks for this date"));
+    add(QStringLiteral("Delete all tasks for this day"), QStringLiteral("\u5220\u9664\u5F53\u524D\u6240\u6709\u4EFB\u52A1\u9879"), QStringLiteral("Delete all tasks for this day"));
     add(QStringLiteral("Inherit All"),    QStringLiteral("\u7EE7\u627F\u5168\u90E8"),  QStringLiteral("Inherit All"));
     add(QStringLiteral("Inherit Incomplete"), QStringLiteral("\u7EE7\u627F\u672A\u5B8C\u6210"), QStringLiteral("Inherit Incomplete"));
 

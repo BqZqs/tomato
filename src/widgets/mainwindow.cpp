@@ -181,9 +181,9 @@ void MainWindow::setupUi()
     m_dailyWidget = new DailyTaskWidget(m_dailyData);
     m_leftSplitter->addWidget(wrapPanel(m_dailyWidget));
 
-    m_leftSplitter->setSizes({360, 360});
+    m_leftSplitter->setSizes({200, 520});
     m_leftSplitter->setStretchFactor(0, 1);
-    m_leftSplitter->setStretchFactor(1, 1);
+    m_leftSplitter->setStretchFactor(1, 2);
 
     m_rightSplitter = new QSplitter(Qt::Vertical);
     m_rightSplitter->setHandleWidth(10);
@@ -196,9 +196,9 @@ void MainWindow::setupUi()
     m_noteWidget = new NoteWidget(m_noteData);
     m_rightSplitter->addWidget(wrapPanel(m_noteWidget));
 
-    m_rightSplitter->setSizes({360, 360});
+    m_rightSplitter->setSizes({260, 460});
     m_rightSplitter->setStretchFactor(0, 1);
-    m_rightSplitter->setStretchFactor(1, 1);
+    m_rightSplitter->setStretchFactor(1, 2);
 
     m_mainSplitter = new QSplitter(Qt::Horizontal);
     m_mainSplitter->setHandleWidth(10);

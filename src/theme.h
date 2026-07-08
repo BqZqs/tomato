@@ -73,6 +73,14 @@ QPushButton:pressed { background:#E5E7EB; }
 QPushButton:disabled { color:#B0B3BF; background:#F9FAFB; border-color:#E5E7EB; }
 )";
 
+inline constexpr auto kIconBtnStyleSheet = R"(
+QPushButton {
+  border:1px solid #D1D5DB;
+  border-radius:4px;
+}
+QPushButton:hover { border-color:#9CA3AF; }
+)";
+
 inline constexpr auto kDateEditStyleSheet = R"(
 QDateEdit {
   font-weight:bold;

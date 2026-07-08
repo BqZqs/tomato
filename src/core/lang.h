@@ -18,6 +18,8 @@ public:
     void setLanguage(const QString &lang);
     int fontOffset() const;
     void setFontOffset(int offset);
+    int noteFontOffset() const;
+    void setNoteFontOffset(int offset);
     QStringList languages() const;
     QString langName(const QString &lang) const;
 
@@ -30,6 +32,7 @@ public:
 signals:
     void languageChanged();
     void fontOffsetChanged(int offset);
+    void noteFontOffsetChanged(int offset);
 
 private:
     explicit LocaleManager(const QString &dataDir);
@@ -40,6 +43,7 @@ private:
     QString m_settingsPath;
     QString m_currentLang;
     int m_fontOffset = 0;
+    int m_noteFontOffset = 0;
     int m_defaultDuration = 25;
 
     // lang -> {displayName, nativeName}
