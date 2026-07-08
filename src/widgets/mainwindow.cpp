@@ -7,6 +7,7 @@
 #include "pomodoro_widget.h"
 #include "taskdata.h"
 #include "taskwidget.h"
+#include "theme.h"
 
 #include <QApplication>
 #include <QComboBox>
@@ -67,8 +68,7 @@ void MainWindow::setupUi()
     // ── Top bar ──────────────────────────────────────────────────────────
     auto *topBar = new QWidget;
     topBar->setFixedHeight(42);
-    topBar->setStyleSheet(QStringLiteral(
-        "background:#FFFFFF; border-radius:10px;"));
+    topBar->setStyleSheet(Theme::kTopBarStyleSheet);
     auto *topLayout = new QHBoxLayout(topBar);
     topLayout->setContentsMargins(16, 0, 12, 0);
     topLayout->setSpacing(8);
@@ -157,8 +157,7 @@ void MainWindow::setupUi()
     auto wrapPanel = [](QWidget *inner) -> QFrame * {
         auto *frame = new QFrame;
         frame->setFrameStyle(QFrame::NoFrame);
-        frame->setStyleSheet(QStringLiteral(
-            "QFrame { background:#FFFFFF; border:none; border-radius:10px; }"));
+        frame->setStyleSheet(Theme::kPanelStyleSheet);
         auto *lay = new QVBoxLayout(frame);
         lay->setContentsMargins(0, 0, 0, 0);
         lay->addWidget(inner);
@@ -174,10 +173,7 @@ void MainWindow::setupUi()
     m_leftSplitter = new QSplitter(Qt::Vertical);
     m_leftSplitter->setHandleWidth(10);
     m_leftSplitter->setChildrenCollapsible(false);
-    m_leftSplitter->setStyleSheet(QStringLiteral(
-        "QSplitter::handle { background:transparent; }"
-        "QSplitter::handle:vertical { height:10px; }"
-        "QSplitter::handle:hover { background:rgba(108,99,255,0.12); border-radius:4px; }"));
+    m_leftSplitter->setStyleSheet(Theme::kSplitterStyleSheet);
 
     m_pomodoroWidget = new PomodoroWidget;
     m_leftSplitter->addWidget(wrapPanel(m_pomodoroWidget));
@@ -192,10 +188,7 @@ void MainWindow::setupUi()
     m_rightSplitter = new QSplitter(Qt::Vertical);
     m_rightSplitter->setHandleWidth(10);
     m_rightSplitter->setChildrenCollapsible(false);
-    m_rightSplitter->setStyleSheet(QStringLiteral(
-        "QSplitter::handle { background:transparent; }"
-        "QSplitter::handle:vertical { height:10px; }"
-        "QSplitter::handle:hover { background:rgba(108,99,255,0.12); border-radius:4px; }"));
+    m_rightSplitter->setStyleSheet(Theme::kSplitterStyleSheet);
 
     m_taskWidget = new TaskWidget(m_taskData);
     m_rightSplitter->addWidget(wrapPanel(m_taskWidget));
@@ -210,10 +203,7 @@ void MainWindow::setupUi()
     m_mainSplitter = new QSplitter(Qt::Horizontal);
     m_mainSplitter->setHandleWidth(10);
     m_mainSplitter->setChildrenCollapsible(false);
-    m_mainSplitter->setStyleSheet(QStringLiteral(
-        "QSplitter::handle { background:transparent; }"
-        "QSplitter::handle:horizontal { width:10px; }"
-        "QSplitter::handle:hover { background:rgba(108,99,255,0.12); border-radius:4px; }"));
+    m_mainSplitter->setStyleSheet(Theme::kSplitterStyleSheet);
     m_mainSplitter->addWidget(m_leftSplitter);
     m_mainSplitter->addWidget(m_rightSplitter);
 

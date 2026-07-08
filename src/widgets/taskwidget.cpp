@@ -1,6 +1,7 @@
 #include "taskwidget.h"
-#include "taskdata.h"
 #include "lang.h"
+#include "taskdata.h"
+#include "theme.h"
 
 #include <QCheckBox>
 #include <QDateEdit>
@@ -17,63 +18,9 @@
 #include <QUuid>
 #include <QVBoxLayout>
 
-// ---------------------------------------------------------------------------
-// Style helpers – match mainwindow.cpp palette
-// ---------------------------------------------------------------------------
-static const char *kBtnStyle =
-    "QPushButton {"
-    "  color:#1A1A2E;"
-    "  background:#FFFFFF;"
-    "  border:1px solid #D1D5DB;"
-    "  border-radius:6px;"
-    "  padding:6px 12px;"
-    "  min-height:32px;"
-    "}"
-    "QPushButton:hover   { background:#F3F4F6; border-color:#9CA3AF; }"
-    "QPushButton:pressed { background:#E5E7EB; }"
-    "QPushButton:disabled { color:#B0B3BF; background:#F9FAFB; border-color:#E5E7EB; }";
-
-static const char *kDateEditStyle =
-    "QDateEdit {"
-    "  font-weight:bold;"
-    "  color:#1A1A2E;"
-    "  background:#FFFFFF;"
-    "  border:1px solid #D1D5DB;"
-    "  border-radius:6px;"
-    "  padding:4px 8px;"
-    "}";
-
-static const char *kListStyle =
-    "QListWidget {"
-    "  color:#1A1A2E;"
-    "  background:transparent;"
-    "  border:1px solid #D1D5DB;"
-    "  border-radius:6px;"
-    "  padding:6px;"
-    "}"
-    "QListWidget::item { padding:2px 0px; border-bottom:1px solid #E5E7EB; }"
-    "QListWidget::item:selected { background:#F3F4F6; }";
-
-static const char *kStatusStyle =
-    "color:#7B7D8C";
-
-static const char *kNoListLabelStyle =
-    "color:#7B7D8C;padding:12px";
-
-static const char *kNavBtnStyle =
-    "QPushButton {"
-    "  font-weight:bold;"
-    "  color:#1A1A2E;"
-    "  background:#FFFFFF;"
-    "  border:1px solid #D1D5DB;"
-    "  border-radius:6px;"
-    "  padding:4px 10px;"
-    "  min-height:28px;"
-    "  min-width:36px;"
-    "}"
-    "QPushButton:hover   { background:#F3F4F6; border-color:#9CA3AF; }"
-    "QPushButton:pressed { background:#E5E7EB; }"
-    "QPushButton:disabled { color:#B0B3BF; background:#F9FAFB; border-color:#E5E7EB; }";
+// Local style helpers (not shared – simple enough to stay local)
+static const char *kStatusStyle = "color:#7B7D8C";
+static const char *kNoListLabelStyle = "color:#7B7D8C;padding:12px";
 
 // ---------------------------------------------------------------------------
 // TaskRow – per-task inline widget row (checklist only, no timer features)
@@ -269,7 +216,7 @@ QHBoxLayout *TaskWidget::buildDateNav()
     row->setSpacing(8);
 
     m_btnPrev = new QPushButton(QStringLiteral("\u25C0"), this); // ◀
-    m_btnPrev->setStyleSheet(kNavBtnStyle);
+    m_btnPrev->setStyleSheet(Theme::kNavBtnStyleSheet);
     m_btnPrev->setToolTip(loc("Previous day"));
     row->addWidget(m_btnPrev);
 
@@ -277,16 +224,16 @@ QHBoxLayout *TaskWidget::buildDateNav()
     m_dateEdit->setDisplayFormat("yyyy-MM-dd");
     m_dateEdit->setCalendarPopup(true);
     m_dateEdit->setAlignment(Qt::AlignCenter);
-    m_dateEdit->setStyleSheet(kDateEditStyle);
+    m_dateEdit->setStyleSheet(Theme::kDateEditStyleSheet);
     row->addWidget(m_dateEdit, /*stretch=*/1);
 
     m_btnNext = new QPushButton(QStringLiteral("\u25B6"), this); // ▶
-    m_btnNext->setStyleSheet(kNavBtnStyle);
+    m_btnNext->setStyleSheet(Theme::kNavBtnStyleSheet);
     m_btnNext->setToolTip(loc("Next day"));
     row->addWidget(m_btnNext);
 
     m_btnToday = new QPushButton(loc("Today"), this);
-    m_btnToday->setStyleSheet(kNavBtnStyle);
+    m_btnToday->setStyleSheet(Theme::kNavBtnStyleSheet);
     m_btnToday->setToolTip(loc("Go to today"));
     row->addWidget(m_btnToday);
 
@@ -312,7 +259,7 @@ QWidget *TaskWidget::buildTaskListView()
 
     // --- Task list ---
     m_taskList = new QListWidget(page);
-    m_taskList->setStyleSheet(kListStyle);
+    m_taskList->setStyleSheet(Theme::kListStyleSheet);
     m_taskList->setAlternatingRowColors(false);
     m_taskList->setSelectionMode(QAbstractItemView::NoSelection);
     m_taskList->setFocusPolicy(Qt::NoFocus);
@@ -342,15 +289,15 @@ QWidget *TaskWidget::buildCreateView()
 
     // Create buttons
     m_btnCreateEmpty = new QPushButton(loc("Create Empty List"), page);
-    m_btnCreateEmpty->setStyleSheet(kBtnStyle);
+    m_btnCreateEmpty->setStyleSheet(Theme::kBtnStyleSheet);
     lay->addWidget(m_btnCreateEmpty);
 
     m_btnInheritAll = new QPushButton(loc("Inherit All from..."), page);
-    m_btnInheritAll->setStyleSheet(kBtnStyle);
+    m_btnInheritAll->setStyleSheet(Theme::kBtnStyleSheet);
     lay->addWidget(m_btnInheritAll);
 
     m_btnInheritIncomplete = new QPushButton(loc("Inherit Incomplete from..."), page);
-    m_btnInheritIncomplete->setStyleSheet(kBtnStyle);
+    m_btnInheritIncomplete->setStyleSheet(Theme::kBtnStyleSheet);
     lay->addWidget(m_btnInheritIncomplete);
 
     lay->addStretch();
@@ -477,7 +424,7 @@ void TaskWidget::populateTaskList()
 
         auto *addBtn = new QPushButton(
             QStringLiteral("+ ") + loc("Add Task"), addWidget);
-        addBtn->setStyleSheet(kBtnStyle);
+        addBtn->setStyleSheet(Theme::kBtnStyleSheet);
         connect(addBtn, &QPushButton::clicked, this, &TaskWidget::onAddTask);
         addLay->addWidget(addBtn, 1);
 
@@ -527,11 +474,11 @@ void TaskWidget::applyFontSize()
     int statusSize = qMax(8, 12 + m_fontOffset);
 
     const QString btnStyle = QStringLiteral("font-size:%1px;").arg(btnSize)
-                             + QString::fromLatin1(kBtnStyle);
+                             + QString::fromLatin1(Theme::kBtnStyleSheet);
     const QString navBtnStyle = QStringLiteral("font-size:%1px;").arg(navSize)
-                                + QString::fromLatin1(kNavBtnStyle);
+                                + QString::fromLatin1(Theme::kNavBtnStyleSheet);
     const QString dateEditStyle = QStringLiteral("font-size:%1px;").arg(navSize)
-                                  + QString::fromLatin1(kDateEditStyle);
+                                  + QString::fromLatin1(Theme::kDateEditStyleSheet);
 
     // Apply font size to all TaskRow widgets
     for (int i = 0; i < m_taskList->count() - 1; ++i) {

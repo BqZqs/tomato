@@ -1,6 +1,5 @@
 #include "taskdata.h"
 
-#include <algorithm>
 #include <QDate>
 #include <QDir>
 #include <QFile>
@@ -9,6 +8,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSaveFile>
+
+#include <algorithm>
 
 TaskData::TaskData(const QString &dataDir)
     : m_dataDir(dataDir)

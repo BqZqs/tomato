@@ -1,6 +1,7 @@
 #include "daily_task_widget.h"
 #include "daily_task_data.h"
 #include "lang.h"
+#include "theme.h"
 
 #include <QComboBox>
 #include <QDate>
@@ -18,64 +19,6 @@
 #include <QStackedWidget>
 #include <QUuid>
 #include <QVBoxLayout>
-
-// ---------------------------------------------------------------------------
-// Style helpers – match mainwindow.cpp palette
-// ---------------------------------------------------------------------------
-static const char *kBtnStyle =
-    "QPushButton {"
-    "  color:#1A1A2E;"
-    "  background:#FFFFFF;"
-    "  border:1px solid #D1D5DB;"
-    "  border-radius:6px;"
-    "  padding:6px 12px;"
-    "  min-height:32px;"
-    "}"
-    "QPushButton:hover   { background:#F3F4F6; border-color:#9CA3AF; }"
-    "QPushButton:pressed { background:#E5E7EB; }"
-    "QPushButton:disabled { color:#B0B3BF; background:#F9FAFB; border-color:#E5E7EB; }";
-
-static const char *kListStyle =
-    "QListWidget {"
-    "  color:#1A1A2E;"
-    "  background:transparent;"
-    "  border:1px solid #D1D5DB;"
-    "  border-radius:6px;"
-    "  padding:6px;"
-    "}"
-    "QListWidget::item { padding:2px 0px; border-bottom:1px solid #E5E7EB; }"
-    "QListWidget::item:selected { background:#F3F4F6; }";
-
-static const char *kNavBtnStyle =
-    "QPushButton {"
-    "  font-weight:bold;"
-    "  color:#1A1A2E;"
-    "  background:#FFFFFF;"
-    "  border:1px solid #D1D5DB;"
-    "  border-radius:6px;"
-    "  padding:4px 10px;"
-    "  min-height:28px;"
-    "  min-width:36px;"
-    "}"
-    "QPushButton:hover   { background:#F3F4F6; border-color:#9CA3AF; }"
-    "QPushButton:pressed { background:#E5E7EB; }"
-    "QPushButton:disabled { color:#B0B3BF; background:#F9FAFB; border-color:#E5E7EB; }";
-
-static const char *kComboStyle =
-    "QComboBox {"
-    "  font-weight:bold;"
-    "  color:#1A1A2E;"
-    "  background:#FFFFFF;"
-    "  border:1px solid #D1D5DB;"
-    "  border-radius:6px;"
-    "  padding:4px 8px;"
-    "}"
-    "QComboBox:hover { border-color:#9CA3AF; }"
-    "QComboBox QAbstractItemView { background:#FFFFFF; selection-background-color:#F3F4F6; }"
-    "QComboBox::drop-down { width:20px; border:none; }"
-    "QComboBox::down-arrow { image:none; border-left:4px solid transparent;"
-    " border-right:4px solid transparent; border-top:5px solid #7B7D8C;"
-    " margin-right:4px; }";
 
 // ---------------------------------------------------------------------------
 // Helper – combined dialog for adding/editing timed tasks
@@ -309,13 +252,13 @@ void DailyTaskWidget::buildUi()
         row->setSpacing(8);
 
         m_prevBtn = new QPushButton(QStringLiteral("\u25C0"), this);
-        m_prevBtn->setStyleSheet(kNavBtnStyle);
+        m_prevBtn->setStyleSheet(Theme::kNavBtnStyleSheet);
         m_prevBtn->setToolTip(loc("Previous day"));
         connect(m_prevBtn, &QPushButton::clicked, this, &DailyTaskWidget::onPrevDay);
         row->addWidget(m_prevBtn);
 
         m_weekdayCombo = new QComboBox(this);
-        m_weekdayCombo->setStyleSheet(kComboStyle);
+        m_weekdayCombo->setStyleSheet(Theme::kComboStyleSheet);
         m_weekdayCombo->addItem(loc("Monday"));
         m_weekdayCombo->addItem(loc("Tuesday"));
         m_weekdayCombo->addItem(loc("Wednesday"));
@@ -327,13 +270,13 @@ void DailyTaskWidget::buildUi()
         row->addWidget(m_weekdayCombo, 1);
 
         m_nextBtn = new QPushButton(QStringLiteral("\u25B6"), this);
-        m_nextBtn->setStyleSheet(kNavBtnStyle);
+        m_nextBtn->setStyleSheet(Theme::kNavBtnStyleSheet);
         m_nextBtn->setToolTip(loc("Next day"));
         connect(m_nextBtn, &QPushButton::clicked, this, &DailyTaskWidget::onNextDay);
         row->addWidget(m_nextBtn);
 
         m_thisWeekBtn = new QPushButton(loc("Today"), this);
-        m_thisWeekBtn->setStyleSheet(kBtnStyle);
+        m_thisWeekBtn->setStyleSheet(Theme::kBtnStyleSheet);
         connect(m_thisWeekBtn, &QPushButton::clicked, this, &DailyTaskWidget::onThisWeek);
         row->addWidget(m_thisWeekBtn);
 
@@ -345,7 +288,7 @@ void DailyTaskWidget::buildUi()
     connect(m_thisWeekBtn, &QPushButton::clicked, this, &DailyTaskWidget::onThisWeek);
 
     m_taskList = new QListWidget(this);
-    m_taskList->setStyleSheet(kListStyle);
+    m_taskList->setStyleSheet(Theme::kListStyleSheet);
     m_taskList->setAlternatingRowColors(false);
     m_taskList->setSelectionMode(QAbstractItemView::NoSelection);
     m_taskList->setFocusPolicy(Qt::NoFocus);
@@ -391,7 +334,7 @@ void DailyTaskWidget::populateTaskList()
 
         auto *addBtn = new QPushButton(
             QStringLiteral("+ ") + loc("Add Timed Task"), addWidget);
-        addBtn->setStyleSheet(kBtnStyle);
+        addBtn->setStyleSheet(Theme::kBtnStyleSheet);
         connect(addBtn, &QPushButton::clicked, this, &DailyTaskWidget::onAddTimedTask);
         addLay->addWidget(addBtn, 1);
 
@@ -589,11 +532,11 @@ void DailyTaskWidget::applyFontSize()
     int navSize = qMax(8, 14 + m_fontOffset);
 
     const QString btnStyle = QStringLiteral("font-size:%1px;").arg(btnSize)
-                             + QString::fromLatin1(kBtnStyle);
+                             + QString::fromLatin1(Theme::kBtnStyleSheet);
     const QString comboStyle = QStringLiteral("font-size:%1px;").arg(comboSize)
-                               + QString::fromLatin1(kComboStyle);
+                               + QString::fromLatin1(Theme::kComboStyleSheet);
     const QString navBtnStyle = QStringLiteral("font-size:%1px;").arg(navSize)
-                                + QString::fromLatin1(kNavBtnStyle);
+                                + QString::fromLatin1(Theme::kNavBtnStyleSheet);
 
     for (int i = 0; i < m_taskList->count() - 1; ++i) {
         auto *row = qobject_cast<DailyTaskRow *>(m_taskList->itemWidget(m_taskList->item(i)));

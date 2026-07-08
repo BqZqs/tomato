@@ -1,6 +1,5 @@
 #include "daily_task_data.h"
 
-#include <algorithm>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -8,6 +7,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSaveFile>
+
+#include <algorithm>
 
 DailyTaskData::DailyTaskData(const QString &dataDir)
     : m_dataDir(dataDir)

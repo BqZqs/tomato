@@ -9,19 +9,24 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 add_executable(Pomodoro
     src/main.cpp
-    src/pomodoro.cpp
-    src/pomodoro_widget.cpp
-    src/mainwindow.cpp
-    src/taskdata.cpp
-    src/taskwidget.cpp
-    src/notedata.cpp
-    src/notewidget.cpp
-    src/lang.cpp
-    src/daily_task_data.cpp
-    src/daily_task_widget.cpp
+    src/core/pomodoro.cpp
+    src/core/lang.cpp
+    src/data/taskdata.cpp
+    src/data/notedata.cpp
+    src/data/daily_task_data.cpp
+    src/widgets/mainwindow.cpp
+    src/widgets/pomodoro_widget.cpp
+    src/widgets/taskwidget.cpp
+    src/widgets/notewidget.cpp
+    src/widgets/daily_task_widget.cpp
 )
 
-target_include_directories(Pomodoro PRIVATE src)
+target_include_directories(Pomodoro PRIVATE
+    src
+    src/core
+    src/data
+    src/widgets
+)
 target_link_libraries(Pomodoro PRIVATE Qt6::Widgets)
 
 if(WIN32)
