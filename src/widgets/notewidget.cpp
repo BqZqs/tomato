@@ -10,12 +10,14 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
-#include <QPlainTextEdit>
+#include <QTextEdit>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QStackedWidget>
 #include <QVBoxLayout>
 #include <QIntValidator>
+#include <QInputDialog>
+#include <QTextList>
 
 // ============================================================================
 // NotebookManageDialog — local helper dialog (not exposed in header)
@@ -219,9 +221,6 @@ private:
 
 } // anonymous namespace
 
-// ============================================================================
-// NoteWidget
-// ============================================================================
 
 NoteWidget::NoteWidget(NoteData *data, QWidget *parent)
     : QWidget(parent), m_data(data), m_currentDate(QDate::currentDate())
@@ -426,29 +425,190 @@ void NoteWidget::setupUi()
 
     editorLay->addLayout(dateBar);
 
-    // Row 3: Markdown editor
-    m_editor = new QPlainTextEdit;
+    auto *editorFrame = new QFrame;
+    editorFrame->setStyleSheet(
+        "QFrame { border:1px solid #D1D5DB; border-radius:6px; background:#FFFFFF; }");
+    auto *efLay = new QVBoxLayout(editorFrame);
+    efLay->setSpacing(0);
+    efLay->setContentsMargins(0, 0, 0, 0);
+
+    auto *toolBar = new QHBoxLayout;
+    toolBar->setContentsMargins(0, 2, 0, 2);
+    toolBar->setSpacing(0);
+
+    auto makeBtn = [](const QString &label, const QString &tip) {
+        auto *b = new QPushButton(label);
+        b->setFixedSize(26, 26);
+        b->setToolTip(tip);
+        b->setStyleSheet(
+            "QPushButton { background:transparent; color:#7B7D8C; border:none; "
+            "border-radius:3px; font-size:12px; font-weight:bold; }"
+            "QPushButton:hover { background:#F3F4F6; color:#1A1A2E; }");
+        return b;
+    };
+
+    auto *boldBtn = makeBtn(QStringLiteral("B"), loc("Bold (Ctrl+B)"));
+    connect(boldBtn, &QPushButton::clicked, this, [this]() {
+        auto fmt = m_editor->currentCharFormat();
+        fmt.setFontWeight(fmt.fontWeight() == QFont::Bold ? QFont::Normal : QFont::Bold);
+        m_editor->mergeCurrentCharFormat(fmt);
+    });
+    toolBar->addWidget(boldBtn);
+
+    auto *italicBtn = makeBtn(QStringLiteral("I"), loc("Italic (Ctrl+I)"));
+    connect(italicBtn, &QPushButton::clicked, this, [this]() {
+        auto fmt = m_editor->currentCharFormat();
+        fmt.setFontItalic(!fmt.fontItalic());
+        m_editor->mergeCurrentCharFormat(fmt);
+    });
+    toolBar->addWidget(italicBtn);
+
+    auto *strikeBtn = makeBtn(QStringLiteral("S"), loc("Strikethrough"));
+    connect(strikeBtn, &QPushButton::clicked, this, [this]() {
+        auto fmt = m_editor->currentCharFormat();
+        fmt.setFontStrikeOut(!fmt.fontStrikeOut());
+        m_editor->mergeCurrentCharFormat(fmt);
+    });
+    toolBar->addWidget(strikeBtn);
+
+    auto *codeBtn = makeBtn(QStringLiteral("`<>`"), loc("Inline code"));
+    connect(codeBtn, &QPushButton::clicked, this, [this]() {
+        auto fmt = m_editor->currentCharFormat();
+        if (fmt.fontFixedPitch()) {
+            fmt.setFontFixedPitch(false);
+            fmt.setBackground(QBrush());
+            fmt.setFontFamilies(QStringList());
+        } else {
+            fmt.setFontFixedPitch(true);
+            fmt.setFontFamilies({"Consolas", "monospace"});
+            fmt.setBackground(QColor("#F0F2F5"));
+        }
+        m_editor->mergeCurrentCharFormat(fmt);
+    });
+    toolBar->addWidget(codeBtn);
+
+    auto *highlightBtn = makeBtn(QStringLiteral("\U0001F3A8"), loc("Highlight"));
+    connect(highlightBtn, &QPushButton::clicked, this, [this]() {
+        auto fmt = m_editor->currentCharFormat();
+        if (fmt.background().color() == QColor("#FEF08A"))
+            fmt.setBackground(QBrush());
+        else
+            fmt.setBackground(QColor("#FEF08A"));
+        m_editor->mergeCurrentCharFormat(fmt);
+    });
+    toolBar->addWidget(highlightBtn);
+
+    toolBar->addSpacing(4);
+
+    auto *headingBtn = makeBtn(QStringLiteral("H"), loc("Heading"));
+    connect(headingBtn, &QPushButton::clicked, this, [this]() {
+        auto cursor = m_editor->textCursor();
+        auto fmt = cursor.blockCharFormat();
+        if (fmt.fontPointSize() > 14) {
+            fmt.setFontPointSize(13);
+            fmt.setFontWeight(QFont::Normal);
+        } else {
+            fmt.setFontPointSize(18);
+            fmt.setFontWeight(QFont::Bold);
+        }
+        cursor.mergeBlockCharFormat(fmt);
+    });
+    toolBar->addWidget(headingBtn);
+
+    auto *bulletBtn = makeBtn(QStringLiteral("\u2022"), loc("Bullet list"));
+    connect(bulletBtn, &QPushButton::clicked, this, [this]() {
+        auto cursor = m_editor->textCursor();
+        auto list = cursor.currentList();
+        if (list && list->format().style() == QTextListFormat::ListDisc) {
+            QTextBlockFormat blkFmt;
+            blkFmt.setIndent(0);
+            cursor.setBlockFormat(blkFmt);
+        } else {
+            QTextListFormat listFmt;
+            listFmt.setStyle(QTextListFormat::ListDisc);
+            cursor.createList(listFmt);
+        }
+    });
+    toolBar->addWidget(bulletBtn);
+
+    auto *orderedBtn = makeBtn(QStringLiteral("1."), loc("Ordered list"));
+    connect(orderedBtn, &QPushButton::clicked, this, [this]() {
+        auto cursor = m_editor->textCursor();
+        auto list = cursor.currentList();
+        if (list && list->format().style() == QTextListFormat::ListDecimal) {
+            QTextBlockFormat blkFmt;
+            blkFmt.setIndent(0);
+            cursor.setBlockFormat(blkFmt);
+        } else {
+            QTextListFormat listFmt;
+            listFmt.setStyle(QTextListFormat::ListDecimal);
+            cursor.createList(listFmt);
+        }
+    });
+    toolBar->addWidget(orderedBtn);
+
+    auto *quoteBtn = makeBtn(QStringLiteral("\""), loc("Blockquote"));
+    connect(quoteBtn, &QPushButton::clicked, this, [this]() {
+        auto cursor = m_editor->textCursor();
+        auto blkFmt = cursor.blockFormat();
+        if (blkFmt.indent() > 0) {
+            blkFmt.setIndent(0);
+            blkFmt.setBackground(QBrush());
+        } else {
+            blkFmt.setIndent(1);
+            blkFmt.setBackground(QColor("#F8F9FB"));
+        }
+        cursor.setBlockFormat(blkFmt);
+    });
+    toolBar->addWidget(quoteBtn);
+
+    toolBar->addSpacing(4);
+
+    auto *linkBtn = makeBtn(QStringLiteral("\U0001F517"), loc("Link (Ctrl+K)"));
+    connect(linkBtn, &QPushButton::clicked, this, [this]() {
+        auto cursor = m_editor->textCursor();
+        QString sel = cursor.selectedText();
+        bool ok = false;
+        QString url = QInputDialog::getText(this, loc("Insert Link"), loc("URL:"),
+                                            QLineEdit::Normal, QString(), &ok);
+        if (!ok || url.trimmed().isEmpty()) return;
+        if (sel.isEmpty()) sel = url;
+        cursor.insertHtml(QStringLiteral("<a href=\"%1\">%2</a>").arg(url, sel));
+    });
+    toolBar->addWidget(linkBtn);
+
+    toolBar->addStretch();
+
+    efLay->addLayout(toolBar);
+
+    auto *toolSep = new QFrame;
+    toolSep->setFrameShape(QFrame::HLine);
+    toolSep->setStyleSheet("QFrame { color:#E5E7EB; }");
+    efLay->addWidget(toolSep);
+
+    m_editor = new QTextEdit;
+    m_editor->setAcceptRichText(false);
     m_editor->setPlaceholderText(loc("Start writing..."));
+
     m_editor->setStyleSheet(
-        "QPlainTextEdit { border:1px solid #D1D5DB;border-radius:6px;padding:12px;"
-        "background:#FFFFFF;color:#1A1A2E;font-family:Consolas,monospace;font-size:13px;"
-        "selection-background-color:#EEF2FF; }"
-        "QPlainTextEdit:focus { border-color:#6C63FF; }");
-    m_editor->setTabStopDistance(32);
+        "QTextEdit { border:none; padding:8px 12px;"
+        "background:transparent;color:#1A1A2E;font-family:Consolas,monospace;font-size:13px;"
+        "selection-background-color:#EEF2FF; }");
 
     auto updateEditorFont = [this](int offset) {
         int px = qMax(8, 13 + offset);
         m_editor->setStyleSheet(
-            QString("QPlainTextEdit { border:1px solid #D1D5DB;border-radius:6px;padding:12px;"
-                    "background:#FFFFFF;color:#1A1A2E;font-family:Consolas,monospace;"
-                    "font-size:%1px;selection-background-color:#EEF2FF; }"
-                    "QPlainTextEdit:focus { border-color:#6C63FF; }").arg(px));
+            QString("QTextEdit { border:none; padding:8px 12px;"
+                    "background:transparent;color:#1A1A2E;font-family:Consolas,monospace;"
+                    "font-size:%1px;selection-background-color:#EEF2FF; }").arg(px));
     };
     updateEditorFont(LocaleManager::instance()->noteFontOffset());
     connect(LocaleManager::instance(), &LocaleManager::noteFontOffsetChanged,
             this, updateEditorFont);
 
-    editorLay->addWidget(m_editor, 1);
+    efLay->addWidget(m_editor, 1);
+
+    editorLay->addWidget(editorFrame, 1);
 
     m_stack->addWidget(m_editorPage); // index 1
 
@@ -464,7 +624,7 @@ void NoteWidget::setupUi()
     connect(m_todayBtn, &QPushButton::clicked, this, &NoteWidget::onToday);
     connect(m_dateEdit, &QDateEdit::dateChanged, this, &NoteWidget::onDateEditChanged);
 
-    connect(m_editor, &QPlainTextEdit::textChanged, this, &NoteWidget::onTextChanged);
+    connect(m_editor, &QTextEdit::textChanged, this, &NoteWidget::onTextChanged);
     connect(m_saveBtn, &QPushButton::clicked, this, &NoteWidget::onSave);
     connect(m_deleteBtn, &QPushButton::clicked, this, &NoteWidget::onDeleteNote);
 
@@ -578,19 +738,23 @@ void NoteWidget::onNotebookChanged(int /*index*/)
 void NoteWidget::loadNote()
 {
     if (m_currentNotebook.isEmpty()) return;
-
     const QString content = m_data->loadNote(m_currentNotebook, m_currentDate);
 
     m_editor->blockSignals(true);
-    m_editor->setPlainText(content);
+    if (content.isEmpty()) {
+        m_editor->clear();
+    } else {
+        m_editor->setMarkdown(content);
+    }
     m_editor->blockSignals(false);
 
-    m_lastSavedText = content;
+    m_lastSavedText = m_editor->toMarkdown();
     m_dirty = false;
     updateDirtyState();
-
-    // Placeholder if empty
-    m_editor->setPlaceholderText(content.isEmpty() ? loc("Start writing...") : "");
+    if (content.isEmpty())
+        m_editor->setPlaceholderText(loc("Start writing..."));
+    else
+        m_editor->setPlaceholderText(QString());
     updatePageLabel();
 }
 
@@ -598,7 +762,7 @@ void NoteWidget::saveCurrentNoteIfDirty()
 {
     if (!m_dirty || m_currentNotebook.isEmpty()) return;
 
-    const QString content = m_editor->toPlainText();
+    const QString content = m_editor->toMarkdown();
     if (content.trimmed().isEmpty()) {
         if (m_data->hasNote(m_currentNotebook, m_currentDate))
             m_data->deleteNote(m_currentNotebook, m_currentDate);
@@ -608,13 +772,14 @@ void NoteWidget::saveCurrentNoteIfDirty()
     m_lastSavedText = content;
     m_dirty = false;
     updateDirtyState();
+    m_editor->setPlaceholderText(content.isEmpty() ? loc("Start writing...") : "");
 }
 
 void NoteWidget::onSave()
 {
     if (m_currentNotebook.isEmpty()) return;
 
-    const QString content = m_editor->toPlainText();
+    const QString content = m_editor->toMarkdown();
     if (content.trimmed().isEmpty()) {
         if (m_data->hasNote(m_currentNotebook, m_currentDate))
             m_data->deleteNote(m_currentNotebook, m_currentDate);
@@ -624,6 +789,7 @@ void NoteWidget::onSave()
     m_lastSavedText = content;
     m_dirty = false;
     updateDirtyState();
+    m_editor->setPlaceholderText(content.isEmpty() ? loc("Start writing...") : "");
 }
 
 void NoteWidget::onDeleteNote()
@@ -655,7 +821,7 @@ void NoteWidget::onDeleteNote()
 
 void NoteWidget::onTextChanged()
 {
-    const QString current = m_editor->toPlainText();
+    const QString current = m_editor->toMarkdown();
     const bool wasDirty = m_dirty;
     m_dirty = (current != m_lastSavedText);
 

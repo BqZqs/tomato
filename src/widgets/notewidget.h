@@ -7,7 +7,7 @@ class NoteData;
 class QComboBox;
 class QDateEdit;
 class QLabel;
-class QPlainTextEdit;
+class QTextEdit;
 class QPushButton;
 class QStackedWidget;
 
@@ -17,7 +17,6 @@ class NoteWidget : public QWidget
 
 public:
     explicit NoteWidget(NoteData *data, QWidget *parent = nullptr);
-
 private slots:
     void onNotebookChanged(int index);
     void onManageNotebooks();
@@ -62,7 +61,7 @@ private:
     QPushButton *m_todayBtn = nullptr;
 
     // Editor
-    QPlainTextEdit *m_editor = nullptr;
+    QTextEdit *m_editor = nullptr;
 
     // Notebook bar icon buttons
     QPushButton *m_saveBtn = nullptr;
