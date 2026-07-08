@@ -20,6 +20,7 @@ class TaskWidget : public QWidget {
 
 public:
     explicit TaskWidget(TaskData *data, QWidget *parent = nullptr);
+    void triggerCleanup();
 
 private slots:
     // Date navigation
@@ -57,7 +58,6 @@ private:
     void refreshDateNav();
     void populateTaskList();
     void saveCurrentList();
-    void updateStatus();
     void applyFontSize();
     bool isAtWindowStart() const;
     bool isAtWindowEnd() const;
@@ -74,9 +74,6 @@ private:
     QPushButton *m_btnToday = nullptr;
     QDateEdit *m_dateEdit = nullptr;
 
-    // Status label (between date nav and content)
-    QLabel *m_statusLabel = nullptr;
-
     // Switches between list view and create view
     QStackedWidget *m_stack = nullptr;
 
@@ -89,4 +86,5 @@ private:
     QPushButton *m_btnInheritIncomplete = nullptr;
 
     int m_taskFontSize = 16;
+    int m_fontOffset = 0;
 };

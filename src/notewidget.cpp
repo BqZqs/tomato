@@ -36,7 +36,7 @@ public:
 
         // --- Title ---
         auto *title = new QLabel(loc("Manage Notebooks"));
-        title->setStyleSheet("font-size:16px;font-weight:bold;color:#2c3e50");
+        title->setStyleSheet("font-size:16px;font-weight:bold;color:#1A1A2E");
         root->addWidget(title);
 
         // --- Notebook list (scrollable) ---
@@ -48,18 +48,18 @@ public:
         auto *scroll = new QScrollArea;
         scroll->setWidgetResizable(true);
         scroll->setWidget(m_listContainer);
-        scroll->setStyleSheet("QScrollArea { border: 1px solid #bdc3c7; border-radius: 6px; background: #ecf0f1; }");
+        scroll->setStyleSheet("QScrollArea { border: 1px solid #D1D5DB; border-radius: 6px; background: #F0F2F5; }");
         root->addWidget(scroll, 1);
 
         // --- Separator ---
         auto *sep = new QLabel;
         sep->setFixedHeight(1);
-        sep->setStyleSheet("background:#bdc3c7");
+        sep->setStyleSheet("background:#D1D5DB");
         root->addWidget(sep);
 
         // --- Create section ---
         auto *createTitle = new QLabel(loc("Create New Notebook"));
-        createTitle->setStyleSheet("font-weight:bold;color:#2c3e50");
+        createTitle->setStyleSheet("font-weight:bold;color:#1A1A2E");
         root->addWidget(createTitle);
 
         auto *createRow = new QHBoxLayout;
@@ -70,20 +70,20 @@ public:
         m_createBtn = new QPushButton(loc("Create"));
         m_createBtn->setMinimumHeight(32);
         m_createBtn->setStyleSheet(
-            "QPushButton { background:#27ae60;color:white;border:none;border-radius:4px;padding:0 16px;font-weight:bold; }"
-            "QPushButton:hover { background:#219a52; }"
-            "QPushButton:disabled { background:#95a5a6; }");
+            "QPushButton { background:#22C55E;color:white;border:none;border-radius:4px;padding:0 16px;font-weight:bold; }"
+            "QPushButton:hover { background:#16A34A; }"
+            "QPushButton:disabled { background:#B0B3BF; }");
         createRow->addWidget(m_nameEdit, 1);
         createRow->addWidget(m_createBtn);
         root->addLayout(createRow);
 
         m_limitLabel = new QLabel;
-        m_limitLabel->setStyleSheet("color:#e74c3c;font-size:12px");
+        m_limitLabel->setStyleSheet("color:#EF4444;font-size:12px");
         m_limitLabel->setVisible(false);
         root->addWidget(m_limitLabel);
 
         m_errorLabel = new QLabel;
-        m_errorLabel->setStyleSheet("color:#e74c3c;font-size:12px");
+        m_errorLabel->setStyleSheet("color:#EF4444;font-size:12px");
         m_errorLabel->setVisible(false);
         root->addWidget(m_errorLabel);
 
@@ -91,8 +91,8 @@ public:
         auto *closeBtn = new QPushButton(loc("Close"));
         closeBtn->setMinimumHeight(36);
         closeBtn->setStyleSheet(
-            "QPushButton { background:#7f8c8d;color:white;border:none;border-radius:4px;padding:0 16px; }"
-            "QPushButton:hover { background:#6c7a7a; }");
+            "QPushButton { background:#9CA3AF;color:white;border:none;border-radius:4px;padding:0 16px; }"
+            "QPushButton:hover { background:#7B7D8C; }");
         root->addWidget(closeBtn);
 
         connect(closeBtn, &QPushButton::clicked, this, &QDialog::accept);
@@ -162,7 +162,7 @@ private:
 
         if (notebooks.isEmpty()) {
             auto *emptyLabel = new QLabel(loc("No notebooks."));
-            emptyLabel->setStyleSheet("color:#95a5a6;font-style:italic;padding:8px");
+            emptyLabel->setStyleSheet("color:#B0B3BF;font-style:italic;padding:8px");
             m_listLayout->addWidget(emptyLabel);
         } else {
             for (const auto &name : notebooks) {
@@ -170,14 +170,14 @@ private:
                 row->setSpacing(8);
 
                 auto *nameLabel = new QLabel(name);
-                nameLabel->setStyleSheet("font-size:13px;color:#2c3e50;padding:4px 0");
+                nameLabel->setStyleSheet("font-size:13px;color:#1A1A2E;padding:4px 0");
                 row->addWidget(nameLabel, 1);
 
                 auto *delBtn = new QPushButton(loc("Delete"));
                 delBtn->setFixedSize(64, 28);
                 delBtn->setStyleSheet(
-                    "QPushButton { background:#e74c3c;color:white;border:none;border-radius:3px;font-size:11px; }"
-                    "QPushButton:hover { background:#c0392b; }");
+                    "QPushButton { background:#EF4444;color:white;border:none;border-radius:3px;font-size:11px; }"
+                    "QPushButton:hover { background:#DC2626; }");
                 connect(delBtn, &QPushButton::clicked, this, [this, name]() { onDelete(name); });
                 row->addWidget(delBtn);
 
@@ -256,16 +256,16 @@ void NoteWidget::setupUi()
 
     m_noNBLabel = new QLabel(loc("No notebooks yet.\nCreate one to start."));
     m_noNBLabel->setAlignment(Qt::AlignCenter);
-    m_noNBLabel->setStyleSheet("font-size:15px;color:#7f8c8d;padding:16px");
+    m_noNBLabel->setStyleSheet("font-size:15px;color:#7B7D8C;padding:16px");
     m_noNBLabel->setWordWrap(true);
     noNBLay->addWidget(m_noNBLabel);
 
     m_createFirstBtn = new QPushButton(loc("Create First Notebook"));
     m_createFirstBtn->setMinimumHeight(40);
     m_createFirstBtn->setStyleSheet(
-        "QPushButton { background:#27ae60;color:white;border:none;border-radius:6px;"
+        "QPushButton { background:#22C55E;color:white;border:none;border-radius:6px;"
         "font-size:14px;font-weight:bold;padding:0 24px; }"
-        "QPushButton:hover { background:#219a52; }");
+        "QPushButton:hover { background:#16A34A; }");
     m_createFirstBtn->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
     noNBLay->addWidget(m_createFirstBtn, 0, Qt::AlignCenter);
     noNBLay->addStretch();
@@ -284,23 +284,23 @@ void NoteWidget::setupUi()
     nbBar->setSpacing(8);
 
     m_nbLabel = new QLabel(loc("Notebook:"));
-    m_nbLabel->setStyleSheet("font-size:13px;color:#2c3e50;font-weight:bold");
+    m_nbLabel->setStyleSheet("font-size:13px;color:#1A1A2E;font-weight:bold");
     nbBar->addWidget(m_nbLabel);
 
     m_notebookCombo = new QComboBox;
     m_notebookCombo->setMinimumHeight(30);
     m_notebookCombo->setStyleSheet(
-        "QComboBox { border:1px solid #bdc3c7;border-radius:4px;padding:4px 8px;background:white;color:#2c3e50; }"
-        "QComboBox:hover { border-color:#7f8c8d; }"
-        "QComboBox QAbstractItemView { background:white;color:#2c3e50;selection-background-color:#ecf0f1; }");
+        "QComboBox { border:1px solid #D1D5DB;border-radius:4px;padding:4px 8px;background:#FFFFFF;color:#1A1A2E; }"
+        "QComboBox:hover { border-color:#9CA3AF; }"
+        "QComboBox QAbstractItemView { background:#FFFFFF;color:#1A1A2E;selection-background-color:#F3F4F6; }");
     nbBar->addWidget(m_notebookCombo, 1);
 
     m_manageBtn = new QPushButton(loc("Manage..."));
     m_manageBtn->setMinimumHeight(30);
     m_manageBtn->setStyleSheet(
-        "QPushButton { background:transparent;color:#7f8c8d;border:1px solid #bdc3c7;"
+        "QPushButton { background:transparent;color:#7B7D8C;border:1px solid #D1D5DB;"
         "border-radius:4px;padding:0 12px;font-size:12px; }"
-        "QPushButton:hover { color:#2c3e50;border-color:#7f8c8d; }");
+        "QPushButton:hover { color:#1A1A2E;border-color:#9CA3AF; }");
     nbBar->addWidget(m_manageBtn);
 
     editorLay->addLayout(nbBar);
@@ -312,9 +312,9 @@ void NoteWidget::setupUi()
     m_prevBtn = new QPushButton(QString::fromUtf8("\xe2\x97\x80"));  // ◀
     m_prevBtn->setFixedSize(32, 30);
     m_prevBtn->setStyleSheet(
-        "QPushButton { background:transparent;color:#7f8c8d;border:1px solid #bdc3c7;"
+        "QPushButton { background:transparent;color:#7B7D8C;border:1px solid #D1D5DB;"
         "border-radius:4px;font-size:14px; }"
-        "QPushButton:hover { color:#2c3e50;border-color:#7f8c8d; }");
+        "QPushButton:hover { color:#1A1A2E;border-color:#9CA3AF; }");
     dateBar->addWidget(m_prevBtn);
 
     m_dateEdit = new QDateEdit(m_currentDate);
@@ -322,10 +322,10 @@ void NoteWidget::setupUi()
     m_dateEdit->setDisplayFormat("yyyy-MM-dd");
     m_dateEdit->setMinimumHeight(30);
     m_dateEdit->setStyleSheet(
-        "QDateEdit { border:1px solid #bdc3c7;border-radius:4px;padding:4px 8px;"
-        "background:white;color:#2c3e50;font-size:13px;font-weight:bold; }"
-        "QDateEdit:hover { border-color:#7f8c8d; }"
-        "QDateEdit:focus { border-color:#27ae60; }");
+        "QDateEdit { border:1px solid #D1D5DB;border-radius:4px;padding:4px 8px;"
+        "background:#FFFFFF;color:#1A1A2E;font-size:13px;font-weight:bold; }"
+        "QDateEdit:hover { border-color:#9CA3AF; }"
+        "QDateEdit:focus { border-color:#6C63FF; }");
     dateBar->addWidget(m_dateEdit, 1);
 
     m_nextBtn = new QPushButton(QString::fromUtf8("\xe2\x96\xb6"));  // ▶
@@ -336,9 +336,9 @@ void NoteWidget::setupUi()
     m_todayBtn = new QPushButton(loc("Today"));
     m_todayBtn->setMinimumHeight(30);
     m_todayBtn->setStyleSheet(
-        "QPushButton { background:transparent;color:#27ae60;border:1px solid #27ae60;"
+        "QPushButton { background:transparent;color:#6C63FF;border:1px solid #6C63FF;"
         "border-radius:4px;padding:0 10px;font-size:12px;font-weight:bold; }"
-        "QPushButton:hover { background:#27ae60;color:white; }");
+        "QPushButton:hover { background:#6C63FF;color:white; }");
     dateBar->addWidget(m_todayBtn);
 
     editorLay->addLayout(dateBar);
@@ -347,10 +347,10 @@ void NoteWidget::setupUi()
     m_editor = new QPlainTextEdit;
     m_editor->setPlaceholderText(loc("Start writing..."));
     m_editor->setStyleSheet(
-        "QPlainTextEdit { border:1px solid #bdc3c7;border-radius:6px;padding:12px;"
-        "background:white;color:#2c3e50;font-family:Consolas,monospace;font-size:13px;"
-        "selection-background-color:#d5e8d4; }"
-        "QPlainTextEdit:focus { border-color:#27ae60; }");
+        "QPlainTextEdit { border:1px solid #D1D5DB;border-radius:6px;padding:12px;"
+        "background:#FFFFFF;color:#1A1A2E;font-family:Consolas,monospace;font-size:13px;"
+        "selection-background-color:#EEF2FF; }"
+        "QPlainTextEdit:focus { border-color:#6C63FF; }");
     m_editor->setTabStopDistance(32);
     editorLay->addWidget(m_editor, 1);
 
@@ -361,22 +361,22 @@ void NoteWidget::setupUi()
     m_saveBtn = new QPushButton(loc("Save"));
     m_saveBtn->setMinimumHeight(36);
     m_saveBtn->setStyleSheet(
-        "QPushButton { background:#27ae60;color:white;border:none;border-radius:4px;"
+        "QPushButton { background:#22C55E;color:white;border:none;border-radius:4px;"
         "padding:0 20px;font-size:13px;font-weight:bold; }"
-        "QPushButton:hover { background:#219a52; }"
-        "QPushButton:disabled { background:#95a5a6; }");
+        "QPushButton:hover { background:#16A34A; }"
+        "QPushButton:disabled { background:#B0B3BF; }");
     bottomBar->addWidget(m_saveBtn);
 
     m_deleteBtn = new QPushButton(loc("Delete This Note"));
     m_deleteBtn->setMinimumHeight(36);
     m_deleteBtn->setStyleSheet(
-        "QPushButton { background:transparent;color:#e74c3c;border:1px solid #e74c3c;"
+        "QPushButton { background:transparent;color:#EF4444;border:1px solid #EF4444;"
         "border-radius:4px;padding:0 16px;font-size:12px; }"
-        "QPushButton:hover { background:#e74c3c;color:white; }");
+        "QPushButton:hover { background:#EF4444;color:white; }");
     bottomBar->addWidget(m_deleteBtn);
 
     m_dirtyLabel = new QLabel;
-    m_dirtyLabel->setStyleSheet("font-size:12px;color:#e67e22;font-style:italic");
+    m_dirtyLabel->setStyleSheet("font-size:12px;color:#F59E0B;font-style:italic");
     m_dirtyLabel->setVisible(false);
     bottomBar->addWidget(m_dirtyLabel, 1);
 

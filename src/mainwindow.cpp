@@ -17,6 +17,7 @@
 #include <QIntValidator>
 #include <QKeyEvent>
 #include <QLabel>
+#include <QPushButton>
 #include <QSplitter>
 #include <QVBoxLayout>
 
@@ -78,6 +79,18 @@ void MainWindow::setupUi()
     topLayout->addWidget(m_titleLabel);
     topLayout->addStretch();
 
+    auto *cleanupBtn = new QPushButton(QStringLiteral("\U0001F9F9"));
+    cleanupBtn->setFixedSize(28, 28);
+    cleanupBtn->setFlat(true);
+    cleanupBtn->setToolTip(loc("Cleanup"));
+    cleanupBtn->setStyleSheet(QStringLiteral(
+        "QPushButton { font-size:14px; border:none; color:#7B7D8C; }"
+        "QPushButton:hover { color:#6C63FF; }"));
+    connect(cleanupBtn, &QPushButton::clicked, this, [this]() {
+        m_taskWidget->triggerCleanup();
+    });
+    topLayout->addWidget(cleanupBtn);
+
     m_fontLabel = new QLabel(loc("Font Size:"));
     m_fontLabel->setStyleSheet(QStringLiteral(
         "font-size:12px; color:#7B7D8C; border:none;"));
@@ -101,7 +114,10 @@ void MainWindow::setupUi()
         "color:#7B7D8C; background:#F8F9FB; }"
         "QComboBox:hover { border-color:#9CA3AF; }"
         "QComboBox:focus { border-color:#6C63FF; }"
-        "QComboBox::drop-down { border:none; width:16px; }"));
+        "QComboBox::drop-down { width:20px; border:none; }"
+        "QComboBox::down-arrow { image:none; border-left:4px solid transparent;"
+        " border-right:4px solid transparent; border-top:5px solid #7B7D8C;"
+        " margin-right:4px; }"));
     connect(m_fontCombo, &QComboBox::currentTextChanged, this, [](const QString &text) {
         bool ok;
         int val = text.toInt(&ok);
@@ -118,7 +134,10 @@ void MainWindow::setupUi()
         "border:1px solid #D1D5DB; border-radius:6px; "
         "color:#7B7D8C; background:#F8F9FB; }"
         "QComboBox:hover { border-color:#9CA3AF; }"
-        "QComboBox::drop-down { border:none; }"));
+        "QComboBox::drop-down { width:20px; border:none; }"
+        "QComboBox::down-arrow { image:none; border-left:4px solid transparent;"
+        " border-right:4px solid transparent; border-top:5px solid #7B7D8C;"
+        " margin-right:4px; }"));
 
     LocaleManager *loc = LocaleManager::instance();
     const QStringList langs = loc->languages();

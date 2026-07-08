@@ -85,12 +85,12 @@ void PomodoroWidget::setupUi()
     m_display->setAlignment(Qt::AlignCenter);
     m_display->setStyleSheet(
         QStringLiteral("font-size:56px;font-weight:bold;font-family:Consolas;"
-                       "color:#2c3e50;background:#ecf0f1;border-radius:10px;padding:16px"));
+                       "color:#1A1A2E;background:#F0F2F5;border-radius:10px;padding:16px"));
     lay->addWidget(m_display);
 
     m_status = new QLabel(loc("Ready"));
     m_status->setAlignment(Qt::AlignCenter);
-    m_status->setStyleSheet(QStringLiteral("font-size:13px;color:#7f8c8d"));
+    m_status->setStyleSheet(QStringLiteral("font-size:13px;color:#7B7D8C"));
     lay->addWidget(m_status);
 
     // Centered HBox with H:M:S spinboxes and buttons
@@ -106,7 +106,7 @@ void PomodoroWidget::setupUi()
     cl->addWidget(m_hoursSpinBox);
 
     m_colon1 = new QLabel(QStringLiteral(":"));
-    m_colon1->setStyleSheet(QStringLiteral("font-size:14px;font-weight:bold;color:#2c3e50;"));
+    m_colon1->setStyleSheet(QStringLiteral("font-size:14px;font-weight:bold;color:#1A1A2E;"));
     cl->addWidget(m_colon1);
 
     m_minutesSpinBox = new QSpinBox;
@@ -117,7 +117,7 @@ void PomodoroWidget::setupUi()
     cl->addWidget(m_minutesSpinBox);
 
     m_colon2 = new QLabel(QStringLiteral(":"));
-    m_colon2->setStyleSheet(QStringLiteral("font-size:14px;font-weight:bold;color:#2c3e50;"));
+    m_colon2->setStyleSheet(QStringLiteral("font-size:14px;font-weight:bold;color:#1A1A2E;"));
     cl->addWidget(m_colon2);
 
     m_secondsSpinBox = new QSpinBox;
@@ -132,13 +132,13 @@ void PomodoroWidget::setupUi()
     m_btnStart = new QPushButton(QStringLiteral("\u25B6")); // ▶
     m_btnStart->setFixedSize(40, 36);
     m_btnStart->setStyleSheet(
-        QStringLiteral("font-size:16px;font-weight:bold;color:#27ae60;"));
+        QStringLiteral("font-size:16px;font-weight:bold;color:#22C55E;"));
     cl->addWidget(m_btnStart);
 
     m_btnReset = new QPushButton(QStringLiteral("\u25A0")); // ■
     m_btnReset->setFixedSize(40, 36);
     m_btnReset->setStyleSheet(
-        QStringLiteral("font-size:16px;font-weight:bold;color:#e74c3c;"));
+        QStringLiteral("font-size:16px;font-weight:bold;color:#EF4444;"));
     cl->addWidget(m_btnReset);
 
     cl->addStretch();
@@ -146,7 +146,7 @@ void PomodoroWidget::setupUi()
 
     m_sessions = new QLabel(loc("Sessions: %1").arg(0));
     m_sessions->setAlignment(Qt::AlignCenter);
-    m_sessions->setStyleSheet(QStringLiteral("font-size:12px;color:#95a5a6"));
+    m_sessions->setStyleSheet(QStringLiteral("font-size:12px;color:#B0B3BF"));
     lay->addWidget(m_sessions);
 
     lay->addStretch();
@@ -157,7 +157,7 @@ void PomodoroWidget::setupUi()
 void PomodoroWidget::refreshTexts()
 {
     m_status->setText(loc("Ready"));
-    m_status->setStyleSheet(QStringLiteral("font-size:13px;color:#7f8c8d"));
+    m_status->setStyleSheet(QStringLiteral("font-size:13px;color:#7B7D8C"));
     m_btnReset->setText(QStringLiteral("\u25A0"));
     m_sessions->setText(loc("Sessions: %1").arg(m_timer->completedSessions()));
     refreshDisplay();
@@ -176,9 +176,9 @@ void PomodoroWidget::onFinished()
 {
     m_display->setStyleSheet(
         QStringLiteral("font-size:56px;font-weight:bold;font-family:Consolas;"
-                       "color:white;background:#e74c3c;border-radius:10px;padding:16px"));
+                       "color:white;background:#EF4444;border-radius:10px;padding:16px"));
     m_status->setText(loc("Done!"));
-    m_status->setStyleSheet(QStringLiteral("font-size:13px;color:#e74c3c;font-weight:bold"));
+    m_status->setStyleSheet(QStringLiteral("font-size:13px;color:#EF4444;font-weight:bold"));
     QApplication::beep();
 
     if (!m_activeTaskId.isEmpty()) {
@@ -196,19 +196,19 @@ void PomodoroWidget::onStateChanged(PomodoroTimer::State s)
 
     if (s == PomodoroTimer::State::Running) {
         m_status->setText(loc("Running..."));
-        m_status->setStyleSheet(QStringLiteral("font-size:13px;color:#27ae60"));
+        m_status->setStyleSheet(QStringLiteral("font-size:13px;color:#22C55E"));
         m_display->setStyleSheet(
             QStringLiteral("font-size:56px;font-weight:bold;font-family:Consolas;"
-                           "color:#2c3e50;background:#ecf0f1;border-radius:10px;padding:16px"));
+                           "color:#1A1A2E;background:#F0F2F5;border-radius:10px;padding:16px"));
     } else if (s == PomodoroTimer::State::Paused) {
         m_status->setText(loc("Paused"));
-        m_status->setStyleSheet(QStringLiteral("font-size:13px;color:#f39c12"));
+        m_status->setStyleSheet(QStringLiteral("font-size:13px;color:#F59E0B"));
     } else {
         m_status->setText(loc("Ready"));
-        m_status->setStyleSheet(QStringLiteral("font-size:13px;color:#7f8c8d"));
+        m_status->setStyleSheet(QStringLiteral("font-size:13px;color:#7B7D8C"));
         m_display->setStyleSheet(
             QStringLiteral("font-size:56px;font-weight:bold;font-family:Consolas;"
-                           "color:#2c3e50;background:#ecf0f1;border-radius:10px;padding:16px"));
+                           "color:#1A1A2E;background:#F0F2F5;border-radius:10px;padding:16px"));
     }
 }
 
@@ -245,18 +245,23 @@ void PomodoroWidget::onFontOffsetChanged(int offset)
     int statusSize = qMax(8, 13 + offset);
     int sessionsSize = qMax(8, 12 + offset);
     int spinboxSize = qMax(8, 13 + offset);
+    int btnSize = qMax(8, 16 + offset);
 
     m_display->setStyleSheet(
         QStringLiteral("font-size:%1px;font-weight:bold;font-family:Consolas;"
-                       "color:#2c3e50;background:#ecf0f1;border-radius:10px;padding:16px")
+                       "color:#1A1A2E;background:#F0F2F5;border-radius:10px;padding:16px")
         .arg(displaySize));
-    m_status->setStyleSheet(QStringLiteral("font-size:%1px;color:#7f8c8d").arg(statusSize));
-    m_sessions->setStyleSheet(QStringLiteral("font-size:%1px;color:#95a5a6").arg(sessionsSize));
+    m_status->setStyleSheet(QStringLiteral("font-size:%1px;color:#7B7D8C").arg(statusSize));
+    m_sessions->setStyleSheet(QStringLiteral("font-size:%1px;color:#B0B3BF").arg(sessionsSize));
     m_hoursSpinBox->setStyleSheet(QStringLiteral("font-size:%1px; padding:2px 4px;").arg(spinboxSize));
     m_minutesSpinBox->setStyleSheet(QStringLiteral("font-size:%1px; padding:2px 4px;").arg(spinboxSize));
     m_secondsSpinBox->setStyleSheet(QStringLiteral("font-size:%1px; padding:2px 4px;").arg(spinboxSize));
     m_colon1->setStyleSheet(QStringLiteral("font-size:%1px; font-weight:bold;").arg(spinboxSize + 2));
     m_colon2->setStyleSheet(QStringLiteral("font-size:%1px; font-weight:bold;").arg(spinboxSize + 2));
+    m_btnStart->setStyleSheet(
+        QStringLiteral("font-size:%1px;font-weight:bold;color:#22C55E;").arg(btnSize));
+    m_btnReset->setStyleSheet(
+        QStringLiteral("font-size:%1px;font-weight:bold;color:#EF4444;").arg(btnSize));
 }
 
 QString PomodoroWidget::fmt(int secs)

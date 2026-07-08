@@ -22,60 +22,58 @@
 // ---------------------------------------------------------------------------
 static const char *kBtnStyle =
     "QPushButton {"
-    "  color:#2c3e50;"
-    "  background:#ecf0f1;"
-    "  border:1px solid #bdc3c7;"
-    "  border-radius:4px;"
+    "  color:#1A1A2E;"
+    "  background:#FFFFFF;"
+    "  border:1px solid #D1D5DB;"
+    "  border-radius:6px;"
     "  padding:6px 12px;"
     "  min-height:32px;"
     "}"
-    "QPushButton:hover   { background:#d5dbdb; }"
-    "QPushButton:pressed { background:#bdc3c7; }"
-    "QPushButton:disabled { color:#95a5a6; background:#ecf0f1; }";
+    "QPushButton:hover   { background:#F3F4F6; border-color:#9CA3AF; }"
+    "QPushButton:pressed { background:#E5E7EB; }"
+    "QPushButton:disabled { color:#B0B3BF; background:#F9FAFB; border-color:#E5E7EB; }";
 
 static const char *kDateEditStyle =
     "QDateEdit {"
-    "  font-size:14px;"
     "  font-weight:bold;"
-    "  color:#2c3e50;"
-    "  background:#ecf0f1;"
-    "  border:1px solid #bdc3c7;"
-    "  border-radius:4px;"
+    "  color:#1A1A2E;"
+    "  background:#FFFFFF;"
+    "  border:1px solid #D1D5DB;"
+    "  border-radius:6px;"
     "  padding:4px 8px;"
     "}";
 
 static const char *kListStyle =
     "QListWidget {"
-    "  color:#2c3e50;"
-    "  background:#ecf0f1;"
-    "  border:1px solid #bdc3c7;"
-    "  border-radius:4px;"
-    "  padding:4px;"
+    "  color:#1A1A2E;"
+    "  background:transparent;"
+    "  border:1px solid #D1D5DB;"
+    "  border-radius:6px;"
+    "  padding:6px;"
     "}"
-    "QListWidget::item { padding:4px 0px; }"
-    "QListWidget::item:selected { background:#d5dbdb; }";
+    "QListWidget::item { padding:2px 0px; border-bottom:1px solid #E5E7EB; }"
+    "QListWidget::item:selected { background:#F3F4F6; }";
 
 static const char *kStatusStyle =
-    "font-size:12px;color:#7f8c8d";
+    "color:#7B7D8C";
 
 static const char *kNoListLabelStyle =
-    "font-size:13px;color:#7f8c8d;padding:12px";
+    "color:#7B7D8C;padding:12px";
 
 static const char *kNavBtnStyle =
     "QPushButton {"
-    "  font-size:14px;"
     "  font-weight:bold;"
-    "  color:#2c3e50;"
-    "  background:#ecf0f1;"
-    "  border:1px solid #bdc3c7;"
-    "  border-radius:4px;"
+    "  color:#1A1A2E;"
+    "  background:#FFFFFF;"
+    "  border:1px solid #D1D5DB;"
+    "  border-radius:6px;"
     "  padding:4px 10px;"
     "  min-height:28px;"
     "  min-width:36px;"
     "}"
-    "QPushButton:hover   { background:#d5dbdb; }"
-    "QPushButton:pressed { background:#bdc3c7; }"
-    "QPushButton:disabled { color:#95a5a6; background:#ecf0f1; }";
+    "QPushButton:hover   { background:#F3F4F6; border-color:#9CA3AF; }"
+    "QPushButton:pressed { background:#E5E7EB; }"
+    "QPushButton:disabled { color:#B0B3BF; background:#F9FAFB; border-color:#E5E7EB; }";
 
 // ---------------------------------------------------------------------------
 // TaskRow – per-task inline widget row (checklist only, no timer features)
@@ -88,7 +86,7 @@ public:
         : QWidget(parent), m_id(id)
     {
         auto *lay = new QHBoxLayout(this);
-        lay->setContentsMargins(4, 2, 4, 2);
+        lay->setContentsMargins(6, 5, 6, 5);
         lay->setSpacing(4);
 
         m_checkBox = new QCheckBox(this);
@@ -134,6 +132,11 @@ public:
     void setText(const QString &t) { m_label->setText(t); }
     void setChecked(bool c) { m_checkBox->setChecked(c); }
 
+    void setCompleted(bool c) {
+        m_checkBox->setChecked(c);
+        applyLabelStyle();
+    }
+
     void startEditing()
     {
         m_editor->setText(m_label->text());
@@ -144,13 +147,26 @@ public:
 
     void setTaskFontSize(int px)
     {
-        m_label->setStyleSheet(QStringLiteral("font-size:%1px;").arg(px));
+        m_fontSize = px;
+        applyLabelStyle();
+        m_editor->setStyleSheet(
+            QStringLiteral("font-size:%1px; padding:2px 6px;").arg(px));
     }
 
     void setButtonStyle(const QString &style)
     {
         m_editBtn->setStyleSheet(style);
         m_deleteBtn->setStyleSheet(style);
+    }
+
+    void applyLabelStyle()
+    {
+        QString style = QStringLiteral("font-size:%1px;").arg(m_fontSize);
+        if (m_checkBox->isChecked())
+            style += QStringLiteral("color:#B0B3BF; text-decoration:line-through;");
+        else
+            style += QStringLiteral("color:#1A1A2E;");
+        m_label->setStyleSheet(style);
     }
 
 signals:
@@ -195,6 +211,7 @@ private:
     QLineEdit *m_editor;
     QPushButton *m_editBtn;
     QPushButton *m_deleteBtn;
+    int m_fontSize = 14;
 };
 
 // ---------------------------------------------------------------------------
@@ -205,7 +222,8 @@ TaskWidget::TaskWidget(TaskData *data, QWidget *parent)
 {
     buildUi();
 
-    m_taskFontSize = qMax(8, 16 + LocaleManager::instance()->fontOffset());
+    m_fontOffset = LocaleManager::instance()->fontOffset();
+    m_taskFontSize = qMax(8, 14 + m_fontOffset);
     applyFontSize();
 
     refreshAll();
@@ -216,23 +234,22 @@ TaskWidget::TaskWidget(TaskData *data, QWidget *parent)
             this, &TaskWidget::onFontOffsetChanged);
 }
 
+void TaskWidget::triggerCleanup()
+{
+    onCleanup();
+}
+
 // ---------------------------------------------------------------------------
 // UI construction
 // ---------------------------------------------------------------------------
 void TaskWidget::buildUi()
 {
     auto *mainLayout = new QVBoxLayout(this);
-    mainLayout->setSpacing(12);
-    mainLayout->setContentsMargins(24, 16, 24, 16);
+    mainLayout->setSpacing(6);
+    mainLayout->setContentsMargins(12, 10, 12, 10);
 
     // --- Date navigation bar (always visible) ---
     mainLayout->addLayout(buildDateNav());
-
-    // --- Status label (always visible) ---
-    m_statusLabel = new QLabel(this);
-    m_statusLabel->setAlignment(Qt::AlignCenter);
-    m_statusLabel->setStyleSheet(kStatusStyle);
-    mainLayout->addWidget(m_statusLabel);
 
     // --- Stacked widget for list / create views ---
     m_stack = new QStackedWidget(this);
@@ -378,10 +395,8 @@ void TaskWidget::refreshAll()
     if (hasTasks) {
         m_stack->setCurrentIndex(0);
         populateTaskList();
-        updateStatus();
     } else {
         m_stack->setCurrentIndex(1);
-        m_statusLabel->setText(loc("No task list for this date."));
     }
 }
 
@@ -470,23 +485,8 @@ void TaskWidget::populateTaskList()
         addItem->setSizeHint(addWidget->sizeHint());
     }
 
-    {
-        auto *cleanupItem = new QListWidgetItem(m_taskList);
-        auto *cleanupWidget = new QWidget(m_taskList);
-        auto *cl = new QHBoxLayout(cleanupWidget);
-        cl->setContentsMargins(4, 0, 4, 2);
-        cl->addStretch();
-        auto *cleanupBtn = new QPushButton(QStringLiteral("\U0001F9F9"), cleanupWidget);
-        cleanupBtn->setFixedSize(24, 24);
-        cleanupBtn->setFlat(true);
-        cleanupBtn->setToolTip(loc("Cleanup"));
-        connect(cleanupBtn, &QPushButton::clicked, this, &TaskWidget::onCleanup);
-        cl->addWidget(cleanupBtn);
-        m_taskList->setItemWidget(cleanupItem, cleanupWidget);
-        cleanupItem->setSizeHint(cleanupWidget->sizeHint());
-    }
-
     m_taskList->blockSignals(false);
+    applyFontSize();
 }
 
 // ---------------------------------------------------------------------------
@@ -497,7 +497,7 @@ void TaskWidget::saveCurrentList()
     QList<TaskItem> tasks;
 
     // Iterate all items except the last two (Add row + Cleanup row)
-    int taskCount = m_taskList->count() - 2;
+    int taskCount = m_taskList->count() - 1;
     tasks.reserve(taskCount);
 
     for (int i = 0; i < taskCount; ++i) {
@@ -515,30 +515,6 @@ void TaskWidget::saveCurrentList()
     }
 
     m_data->saveTasks(m_currentDate, tasks);
-    updateStatus();
-}
-
-// ---------------------------------------------------------------------------
-// Update status label
-// ---------------------------------------------------------------------------
-void TaskWidget::updateStatus()
-{
-    if (!m_data->hasTaskFile(m_currentDate)) {
-        m_statusLabel->setText(loc("No task list for this date."));
-        return;
-    }
-
-    // Count real tasks (exclude Add row and Cleanup row at the end)
-    int total = m_taskList->count() - 2;
-    int done  = 0;
-    for (int i = 0; i < total; ++i) {
-        auto *row = qobject_cast<TaskRow *>(m_taskList->itemWidget(m_taskList->item(i)));
-        if (row && row->isChecked())
-            ++done;
-    }
-
-    m_statusLabel->setText(
-        loc("%1 tasks, %2 done").arg(total).arg(done));
 }
 
 // ---------------------------------------------------------------------------
@@ -546,15 +522,19 @@ void TaskWidget::updateStatus()
 // ---------------------------------------------------------------------------
 void TaskWidget::applyFontSize()
 {
-    const QString btnStyle = QStringLiteral("font-size:%1px;").arg(m_taskFontSize)
-                             + QString::fromLatin1(kBtnStyle);
-    const QString listStyle = QStringLiteral("font-size:%1px;").arg(m_taskFontSize)
-                              + QString::fromLatin1(kListStyle);
+    int btnSize = qMax(8, 13 + m_fontOffset);
+    int navSize = qMax(8, 14 + m_fontOffset);
+    int statusSize = qMax(8, 12 + m_fontOffset);
 
-    m_taskList->setStyleSheet(listStyle);
+    const QString btnStyle = QStringLiteral("font-size:%1px;").arg(btnSize)
+                             + QString::fromLatin1(kBtnStyle);
+    const QString navBtnStyle = QStringLiteral("font-size:%1px;").arg(navSize)
+                                + QString::fromLatin1(kNavBtnStyle);
+    const QString dateEditStyle = QStringLiteral("font-size:%1px;").arg(navSize)
+                                  + QString::fromLatin1(kDateEditStyle);
 
     // Apply font size to all TaskRow widgets
-    for (int i = 0; i < m_taskList->count() - 2; ++i) {
+    for (int i = 0; i < m_taskList->count() - 1; ++i) {
         auto *row = qobject_cast<TaskRow *>(m_taskList->itemWidget(m_taskList->item(i)));
         if (row) {
             row->setTaskFontSize(m_taskFontSize);
@@ -562,9 +542,8 @@ void TaskWidget::applyFontSize()
         }
     }
 
-    // Style the "Add" row widget (second-to-last item)
-    if (m_taskList->count() >= 2) {
-        auto *addWidget = m_taskList->itemWidget(m_taskList->item(m_taskList->count() - 2));
+    if (m_taskList->count() >= 1) {
+        auto *addWidget = m_taskList->itemWidget(m_taskList->item(m_taskList->count() - 1));
         if (addWidget) {
             auto buttons = addWidget->findChildren<QPushButton *>();
             for (auto *btn : buttons)
@@ -572,26 +551,22 @@ void TaskWidget::applyFontSize()
         }
     }
 
-    // Cleanup row button (last item)
-    if (m_taskList->count() >= 1) {
-        auto *cleanupWidget = m_taskList->itemWidget(m_taskList->item(m_taskList->count() - 1));
-        if (cleanupWidget) {
-            auto *cleanupBtn = cleanupWidget->findChild<QPushButton *>();
-            if (cleanupBtn)
-                cleanupBtn->setStyleSheet(btnStyle);
-        }
-    }
-
     // Create view buttons
     m_btnCreateEmpty->setStyleSheet(btnStyle);
     m_btnInheritAll->setStyleSheet(btnStyle);
     m_btnInheritIncomplete->setStyleSheet(btnStyle);
+
+    // Date navigation
+    m_dateEdit->setStyleSheet(dateEditStyle);
+    m_btnPrev->setStyleSheet(navBtnStyle);
+    m_btnNext->setStyleSheet(navBtnStyle);
+    m_btnToday->setStyleSheet(navBtnStyle);
 }
 
 void TaskWidget::onFontOffsetChanged(int offset)
 {
-    int actualSize = qMax(8, 16 + offset);  // base 16, clamp min 8
-    m_taskFontSize = actualSize;
+    m_fontOffset = offset;
+    m_taskFontSize = qMax(8, 14 + offset);
     applyFontSize();
 }
 
@@ -636,7 +611,7 @@ void TaskWidget::onAddTask()
     QString newId = QUuid::createUuid().toString(QUuid::WithoutBraces);
 
     // Insert new empty task row just before the Add row
-    int insertPos = m_taskList->count() - 2; // before add + cleanup rows
+    int insertPos = m_taskList->count() - 1; // before add + cleanup rows
     if (insertPos < 0) insertPos = 0;
 
     auto *item = new QListWidgetItem;
@@ -651,14 +626,17 @@ void TaskWidget::onAddTask()
     m_taskList->setItemWidget(item, row);
     item->setSizeHint(row->sizeHint());
 
+    applyFontSize();
+
     // Immediately start inline editing
     row->startEditing();
 }
 
 void TaskWidget::onRowChecked(const QString &id, bool checked)
 {
-    Q_UNUSED(id);
-    Q_UNUSED(checked);
+    auto *row = findRowById(id);
+    if (row)
+        row->setCompleted(checked);
     saveCurrentList();
 }
 
@@ -677,7 +655,7 @@ void TaskWidget::onRowEditCancelled(const QString &id)
 {
     auto *row = findRowById(id);
     if (row && row->text().isEmpty()) {
-        for (int i = 0; i < m_taskList->count() - 2; ++i) {
+        for (int i = 0; i < m_taskList->count() - 1; ++i) {
             auto *r = qobject_cast<TaskRow *>(m_taskList->itemWidget(m_taskList->item(i)));
             if (r && r->id() == id) {
                 delete m_taskList->takeItem(i);
@@ -690,7 +668,7 @@ void TaskWidget::onRowEditCancelled(const QString &id)
 
 void TaskWidget::onRowDelete(const QString &id)
 {
-    for (int i = 0; i < m_taskList->count() - 2; ++i) {
+    for (int i = 0; i < m_taskList->count() - 1; ++i) {
         auto *row = qobject_cast<TaskRow *>(m_taskList->itemWidget(m_taskList->item(i)));
         if (row && row->id() == id) {
             delete m_taskList->takeItem(i);
@@ -703,12 +681,8 @@ void TaskWidget::onRowDelete(const QString &id)
 void TaskWidget::onCleanup()
 {
     int count = m_data->cleanupOutsideWindow();
-    QMessageBox::information(
-        this, loc("Cleanup Complete"),
-        loc("Deleted %1 file(s) outside the 15-day window.").arg(count));
-
-    // Re-check current date — if the file was among those cleaned, switch view
-    refreshAll();
+    if (count > 0)
+        refreshAll();
 }
 
 // ---------------------------------------------------------------------------
@@ -792,7 +766,7 @@ void TaskWidget::onInheritIncomplete()
 // ---------------------------------------------------------------------------
 TaskRow *TaskWidget::findRowById(const QString &id) const
 {
-    for (int i = 0; i < m_taskList->count() - 2; ++i) {
+    for (int i = 0; i < m_taskList->count() - 1; ++i) {
         auto *row = qobject_cast<TaskRow *>(m_taskList->itemWidget(m_taskList->item(i)));
         if (row && row->id() == id)
             return row;

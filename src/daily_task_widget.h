@@ -27,21 +27,24 @@ private slots:
     void onRowDurationChanged(const QString &id, int newMinutes);
     void onWeekdayChanged(int index);
     void onThisWeek();
+    void onPrevDay();
+    void onNextDay();
     void onFontOffsetChanged(int offset);
 private:
     void buildUi();
     void populateTaskList();
     void saveCurrentList();
-    void applyFontSize(int px);
+    void applyFontSize();
     int currentWeekday() const;
 
     DailyTaskData *m_data;
     int m_weekday;
-    int m_taskFontSize = 16;
+    int m_fontOffset = 0;
 
     QComboBox *m_weekdayCombo;
+    QPushButton *m_prevBtn;
+    QPushButton *m_nextBtn;
     QPushButton *m_thisWeekBtn;
-    QLabel *m_statusLabel;
     QListWidget *m_taskList;
 
     DailyTaskRow *findRowById(const QString &id) const;

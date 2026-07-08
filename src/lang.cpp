@@ -231,5 +231,4 @@ void LocaleManager::initTranslations()
     add(QStringLiteral("Friday"),         QStringLiteral("\u661F\u671F\u4E94"),        QStringLiteral("Friday"));
     add(QStringLiteral("Saturday"),       QStringLiteral("\u661F\u671F\u516D"),        QStringLiteral("Saturday"));
     add(QStringLiteral("Sunday"),         QStringLiteral("\u661F\u671F\u65E5"),        QStringLiteral("Sunday"));
-    add(QStringLiteral("This Week"),      QStringLiteral("\u672C\u5468"),              QStringLiteral("This Week"));
 }

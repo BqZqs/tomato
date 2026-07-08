@@ -24,41 +24,58 @@
 // ---------------------------------------------------------------------------
 static const char *kBtnStyle =
     "QPushButton {"
-    "  color:#2c3e50;"
-    "  background:#ecf0f1;"
-    "  border:1px solid #bdc3c7;"
-    "  border-radius:4px;"
+    "  color:#1A1A2E;"
+    "  background:#FFFFFF;"
+    "  border:1px solid #D1D5DB;"
+    "  border-radius:6px;"
     "  padding:6px 12px;"
     "  min-height:32px;"
     "}"
-    "QPushButton:hover   { background:#d5dbdb; }"
-    "QPushButton:pressed { background:#bdc3c7; }"
-    "QPushButton:disabled { color:#95a5a6; background:#ecf0f1; }";
+    "QPushButton:hover   { background:#F3F4F6; border-color:#9CA3AF; }"
+    "QPushButton:pressed { background:#E5E7EB; }"
+    "QPushButton:disabled { color:#B0B3BF; background:#F9FAFB; border-color:#E5E7EB; }";
 
 static const char *kListStyle =
     "QListWidget {"
-    "  color:#2c3e50;"
-    "  background:#ecf0f1;"
-    "  border:1px solid #bdc3c7;"
-    "  border-radius:4px;"
-    "  padding:4px;"
+    "  color:#1A1A2E;"
+    "  background:transparent;"
+    "  border:1px solid #D1D5DB;"
+    "  border-radius:6px;"
+    "  padding:6px;"
     "}"
-    "QListWidget::item { padding:4px 0px; }"
-    "QListWidget::item:selected { background:#d5dbdb; }";
+    "QListWidget::item { padding:2px 0px; border-bottom:1px solid #E5E7EB; }"
+    "QListWidget::item:selected { background:#F3F4F6; }";
 
-static const char *kStatusStyle =
-    "font-size:12px;color:#7f8c8d";
+static const char *kNavBtnStyle =
+    "QPushButton {"
+    "  font-weight:bold;"
+    "  color:#1A1A2E;"
+    "  background:#FFFFFF;"
+    "  border:1px solid #D1D5DB;"
+    "  border-radius:6px;"
+    "  padding:4px 10px;"
+    "  min-height:28px;"
+    "  min-width:36px;"
+    "}"
+    "QPushButton:hover   { background:#F3F4F6; border-color:#9CA3AF; }"
+    "QPushButton:pressed { background:#E5E7EB; }"
+    "QPushButton:disabled { color:#B0B3BF; background:#F9FAFB; border-color:#E5E7EB; }";
 
 static const char *kComboStyle =
     "QComboBox {"
-    "  font-size:14px;"
     "  font-weight:bold;"
-    "  color:#2c3e50;"
-    "  background:#ecf0f1;"
-    "  border:1px solid #bdc3c7;"
-    "  border-radius:4px;"
+    "  color:#1A1A2E;"
+    "  background:#FFFFFF;"
+    "  border:1px solid #D1D5DB;"
+    "  border-radius:6px;"
     "  padding:4px 8px;"
-    "}";
+    "}"
+    "QComboBox:hover { border-color:#9CA3AF; }"
+    "QComboBox QAbstractItemView { background:#FFFFFF; selection-background-color:#F3F4F6; }"
+    "QComboBox::drop-down { width:20px; border:none; }"
+    "QComboBox::down-arrow { image:none; border-left:4px solid transparent;"
+    " border-right:4px solid transparent; border-top:5px solid #7B7D8C;"
+    " margin-right:4px; }";
 
 // ---------------------------------------------------------------------------
 // Helper – combined dialog for adding/editing timed tasks
@@ -106,7 +123,7 @@ public:
         : QWidget(parent), m_id(id), m_durationMinutes(durationMinutes)
     {
         auto *lay = new QHBoxLayout(this);
-        lay->setContentsMargins(4, 2, 4, 2);
+        lay->setContentsMargins(6, 5, 6, 5);
         lay->setSpacing(4);
 
         m_playBtn = new QPushButton(QStringLiteral("\u25B6"), this); // ▶
@@ -163,12 +180,7 @@ public:
 
     void setCompleted(bool c) {
         m_completed = c;
-        if (c) {
-            m_label->setStyleSheet(
-                QStringLiteral("color:#95a5a6; text-decoration:line-through;"));
-        } else {
-            m_label->setStyleSheet(QString());
-        }
+        applyLabelStyle();
     }
 
     void startEditing()
@@ -195,10 +207,10 @@ public:
 
     void setTaskFontSize(int px)
     {
-        m_label->setStyleSheet(
-            QStringLiteral("font-size:%1px;").arg(px));
+        m_fontSize = px;
+        applyLabelStyle();
         m_durationLabel->setStyleSheet(
-            QStringLiteral("font-size:%1px; color:#7f8c8d; padding:0 2px;").arg(px - 1));
+            QStringLiteral("font-size:%1px; color:#7B7D8C; padding:0 2px;").arg(px - 1));
     }
 
     void setButtonStyle(const QString &style)
@@ -206,6 +218,14 @@ public:
         m_playBtn->setStyleSheet(style);
         m_editBtn->setStyleSheet(style);
         m_deleteBtn->setStyleSheet(style);
+    }
+
+    void applyLabelStyle()
+    {
+        QString style = QStringLiteral("font-size:%1px;").arg(m_fontSize);
+        if (m_completed)
+            style += QStringLiteral("color:#B0B3BF; text-decoration:line-through;");
+        m_label->setStyleSheet(style);
     }
 
 signals:
@@ -253,6 +273,7 @@ private:
     QString m_id;
     int m_durationMinutes = 0;
     bool m_completed = false;
+    int m_fontSize = 14;
     QPushButton *m_playBtn;
     QLabel *m_durationLabel;
     QStackedWidget *m_stack;
@@ -271,7 +292,8 @@ DailyTaskWidget::DailyTaskWidget(DailyTaskData *data, QWidget *parent)
     buildUi();
     populateTaskList();
 
-    applyFontSize(qMax(8, 16 + LocaleManager::instance()->fontOffset()));
+    m_fontOffset = LocaleManager::instance()->fontOffset();
+    applyFontSize();
     connect(LocaleManager::instance(), &LocaleManager::fontOffsetChanged,
             this, &DailyTaskWidget::onFontOffsetChanged);
 }
@@ -279,28 +301,40 @@ DailyTaskWidget::DailyTaskWidget(DailyTaskData *data, QWidget *parent)
 void DailyTaskWidget::buildUi()
 {
     auto *lay = new QVBoxLayout(this);
-    lay->setSpacing(12);
-    lay->setContentsMargins(24, 16, 24, 16);
+    lay->setSpacing(6);
+    lay->setContentsMargins(12, 10, 12, 10);
 
-    // Weekday selector row
     {
         auto *row = new QHBoxLayout;
         row->setSpacing(8);
 
+        m_prevBtn = new QPushButton(QStringLiteral("\u25C0"), this);
+        m_prevBtn->setStyleSheet(kNavBtnStyle);
+        m_prevBtn->setToolTip(loc("Previous day"));
+        connect(m_prevBtn, &QPushButton::clicked, this, &DailyTaskWidget::onPrevDay);
+        row->addWidget(m_prevBtn);
+
         m_weekdayCombo = new QComboBox(this);
         m_weekdayCombo->setStyleSheet(kComboStyle);
-        m_weekdayCombo->addItem(QStringLiteral("Monday"));
-        m_weekdayCombo->addItem(QStringLiteral("Tuesday"));
-        m_weekdayCombo->addItem(QStringLiteral("Wednesday"));
-        m_weekdayCombo->addItem(QStringLiteral("Thursday"));
-        m_weekdayCombo->addItem(QStringLiteral("Friday"));
-        m_weekdayCombo->addItem(QStringLiteral("Saturday"));
-        m_weekdayCombo->addItem(QStringLiteral("Sunday"));
+        m_weekdayCombo->addItem(loc("Monday"));
+        m_weekdayCombo->addItem(loc("Tuesday"));
+        m_weekdayCombo->addItem(loc("Wednesday"));
+        m_weekdayCombo->addItem(loc("Thursday"));
+        m_weekdayCombo->addItem(loc("Friday"));
+        m_weekdayCombo->addItem(loc("Saturday"));
+        m_weekdayCombo->addItem(loc("Sunday"));
         m_weekdayCombo->setCurrentIndex(m_weekday - 1);
         row->addWidget(m_weekdayCombo, 1);
 
-        m_thisWeekBtn = new QPushButton(loc("This Week"), this);
+        m_nextBtn = new QPushButton(QStringLiteral("\u25B6"), this);
+        m_nextBtn->setStyleSheet(kNavBtnStyle);
+        m_nextBtn->setToolTip(loc("Next day"));
+        connect(m_nextBtn, &QPushButton::clicked, this, &DailyTaskWidget::onNextDay);
+        row->addWidget(m_nextBtn);
+
+        m_thisWeekBtn = new QPushButton(loc("Today"), this);
         m_thisWeekBtn->setStyleSheet(kBtnStyle);
+        connect(m_thisWeekBtn, &QPushButton::clicked, this, &DailyTaskWidget::onThisWeek);
         row->addWidget(m_thisWeekBtn);
 
         lay->addLayout(row);
@@ -309,11 +343,6 @@ void DailyTaskWidget::buildUi()
     connect(m_weekdayCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &DailyTaskWidget::onWeekdayChanged);
     connect(m_thisWeekBtn, &QPushButton::clicked, this, &DailyTaskWidget::onThisWeek);
-
-    m_statusLabel = new QLabel(this);
-    m_statusLabel->setAlignment(Qt::AlignCenter);
-    m_statusLabel->setStyleSheet(kStatusStyle);
-    lay->addWidget(m_statusLabel);
 
     m_taskList = new QListWidget(this);
     m_taskList->setStyleSheet(kListStyle);
@@ -371,6 +400,7 @@ void DailyTaskWidget::populateTaskList()
     }
 
     m_taskList->blockSignals(false);
+    applyFontSize();
 }
 
 // ---------------------------------------------------------------------------
@@ -439,6 +469,8 @@ void DailyTaskWidget::onAddTimedTask()
     m_taskList->setItemWidget(item, row);
     item->setSizeHint(row->sizeHint());
 
+    applyFontSize();
+
     saveCurrentList();
 }
 
@@ -498,6 +530,22 @@ void DailyTaskWidget::onRowDurationChanged(const QString &id, int newMinutes)
     saveCurrentList();
 }
 
+void DailyTaskWidget::onPrevDay()
+{
+    m_weekday--;
+    if (m_weekday < 1) m_weekday = 7;
+    m_weekdayCombo->setCurrentIndex(m_weekday - 1);
+    populateTaskList();
+}
+
+void DailyTaskWidget::onNextDay()
+{
+    m_weekday++;
+    if (m_weekday > 7) m_weekday = 1;
+    m_weekdayCombo->setCurrentIndex(m_weekday - 1);
+    populateTaskList();
+}
+
 void DailyTaskWidget::onWeekdayChanged(int index)
 {
     m_weekday = index + 1; // 0=Monday → 1
@@ -533,20 +581,47 @@ DailyTaskRow *DailyTaskWidget::findRowById(const QString &id) const
     return nullptr;
 }
 
-void DailyTaskWidget::applyFontSize(int px)
+void DailyTaskWidget::applyFontSize()
 {
-    // Apply to all rows
+    int textSize = qMax(8, 14 + m_fontOffset);
+    int btnSize = qMax(8, 13 + m_fontOffset);
+    int comboSize = qMax(8, 13 + m_fontOffset);
+    int navSize = qMax(8, 14 + m_fontOffset);
+
+    const QString btnStyle = QStringLiteral("font-size:%1px;").arg(btnSize)
+                             + QString::fromLatin1(kBtnStyle);
+    const QString comboStyle = QStringLiteral("font-size:%1px;").arg(comboSize)
+                               + QString::fromLatin1(kComboStyle);
+    const QString navBtnStyle = QStringLiteral("font-size:%1px;").arg(navSize)
+                                + QString::fromLatin1(kNavBtnStyle);
+
     for (int i = 0; i < m_taskList->count() - 1; ++i) {
         auto *row = qobject_cast<DailyTaskRow *>(m_taskList->itemWidget(m_taskList->item(i)));
-        if (row)
-            row->setTaskFontSize(px);
+        if (row) {
+            row->setTaskFontSize(textSize);
+            row->setButtonStyle(btnStyle);
+        }
     }
+
+    if (m_taskList->count() >= 1) {
+        auto *addWidget = m_taskList->itemWidget(m_taskList->item(m_taskList->count() - 1));
+        if (addWidget) {
+            auto buttons = addWidget->findChildren<QPushButton *>();
+            for (auto *btn : buttons)
+                btn->setStyleSheet(btnStyle);
+        }
+    }
+
+    m_prevBtn->setStyleSheet(navBtnStyle);
+    m_nextBtn->setStyleSheet(navBtnStyle);
+    m_weekdayCombo->setStyleSheet(comboStyle);
+    m_thisWeekBtn->setStyleSheet(btnStyle);
 }
 
 void DailyTaskWidget::onFontOffsetChanged(int offset)
 {
-    int actualSize = qMax(8, 16 + offset);
-    applyFontSize(actualSize);
+    m_fontOffset = offset;
+    applyFontSize();
 }
 
 #include "daily_task_widget.moc"
